@@ -1,30 +1,63 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <title>Chat</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<h2 id="roomName"></h2>
 
-<div class="chat-container">
-
-  <ul id="users"></ul>
-
-  <div class="chat-area">
-    <div id="messages"></div>
-    <p id="typing"></p>
-
-    <form id="msgForm">
-      <input id="msg" autocomplete="off" />
-      <button>Send</button>
-    </form>
+  <div class="chat-header">
+    <h2 id="roomName"></h2>
+    <div class="call-buttons">
+      <button id="audioCallBtn" class="call-btn audio-btn" title="Audio Call">📞</button>
+      <button id="videoCallBtn" class="call-btn video-btn" title="Video Call">📹</button>
+    </div>
   </div>
 
-</div>
+  <!-- Incoming Call Modal -->
+  <div id="incomingCallModal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Incoming Call...</h3>
+      <p id="callerName"></p>
+      <div class="modal-actions">
+        <button id="acceptCallBtn" class="accept-btn">Accept</button>
+        <button id="rejectCallBtn" class="reject-btn">Reject</button>
+      </div>
+    </div>
+  </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="main.js"></script>
+  <!-- Video Call Container -->
+  <div id="callContainer" class="call-container hidden">
+    <div id="videoGrid" class="video-grid"></div>
+    <div class="call-controls">
+      <button id="toggleMicBtn" class="control-btn" title="Toggle Mic">🎤</button>
+      <button id="toggleVideoBtn" class="control-btn" title="Toggle Video">📹</button>
+      <button id="leaveCallBtn" class="control-btn leave-btn" title="Leave Call">📞</button>
+    </div>
+  </div>
+
+
+  <div class="chat-container">
+
+    <ul id="users"></ul>
+
+    <div class="chat-area">
+      <div id="messages"></div>
+      <p id="typing"></p>
+
+      <form id="msgForm">
+        <input id="msg" autocomplete="off" />
+        <button>Send</button>
+      </form>
+    </div>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="main.js"></script>
 </body>
+
 </html>

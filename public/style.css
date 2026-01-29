@@ -261,3 +261,198 @@ body {
     transform: translateY(0);
   }
 }
+
+/* =========================
+   CALL UI
+========================= */
+
+/* Header Buttons */
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(90deg, #fffc00, #ffe600);
+  padding: 0 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.chat-header h2 {
+  background: none;
+  box-shadow: none;
+  padding: 14px 0;
+  margin: 0;
+  text-align: left;
+}
+
+.call-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.call-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+  padding: 5px;
+  border-radius: 50%;
+}
+
+.call-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+
+/* Call Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: #1e293b;
+  padding: 30px;
+  border-radius: 16px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  animation: fadeInUp 0.3s ease;
+}
+
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.modal-actions button {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: transform 0.1s;
+}
+
+.accept-btn {
+  background: #22c55e;
+  color: white;
+}
+
+.reject-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.modal-actions button:hover {
+  transform: scale(1.05);
+}
+
+/* Call Container (Video Grid) */
+.call-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #0f172a;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+}
+
+.call-container.hidden {
+  display: none;
+}
+
+.video-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  overflow-y: auto;
+  align-content: center;
+}
+
+.video-card {
+  background: #1e293b;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  aspect-ratio: 16/9;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.video-card video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-card .user-label {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: white;
+}
+
+.call-controls {
+  height: 80px;
+  background: #020617;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.control-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background: #334155;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-btn:hover {
+  background: #475569;
+}
+
+.control-btn.active {
+  background: #ef4444;
+  /* Red for muted/off */
+}
+
+.leave-btn {
+  background: #ef4444;
+}
+
+.leave-btn:hover {
+  background: #dc2626;
+}
