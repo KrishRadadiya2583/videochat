@@ -95,6 +95,7 @@ const videoGrid = document.getElementById("videoGrid");
 const toggleMicBtn = document.getElementById("toggleMicBtn");
 const toggleVideoBtn = document.getElementById("toggleVideoBtn");
 const leaveCallBtn = document.getElementById("leaveCallBtn");
+const leaveChatBtn = document.getElementById("leaveChatBtn");
 
 const incomingCallModal = document.getElementById("incomingCallModal");
 const callerNameSpan = document.getElementById("callerName");
@@ -109,6 +110,9 @@ const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 audioCallBtn?.addEventListener("click", () => startCall({ audio: true, video: false }));
 videoCallBtn?.addEventListener("click", () => startCall({ audio: true, video: true }));
 leaveCallBtn?.addEventListener("click", endCall);
+leaveChatBtn?.addEventListener("click", () => {
+  window.location.href = "index.html";
+});
 toggleMicBtn?.addEventListener("click", () => toggleMedia("audio"));
 toggleVideoBtn?.addEventListener("click", () => toggleMedia("video"));
 
