@@ -103,191 +103,110 @@ const rejectCallBtn = document.getElementById("rejectCallBtn");
 
 let localStream;
 let peers = {}; // socketId -> RTCPeerConnection
-const rtcConfig = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
-  ]
-};
-
-let isAudioOnly = false;
-let incomingCallData = null; // Store caller info
+const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
 // --- BUTTONS ---
-audioCallBtn.addEventListener("click", () => startCall(true));
-videoCallBtn.addEventListener("click", () => startCall(false));
+audioCallBtn?.addEventListener("click", () => startCall({ audio: true, video: false }));
+videoCallBtn?.addEventListener("click", () => startCall({ audio: true, video: true }));
+leaveCallBtn?.addEventListener("click", endCall);
+toggleMicBtn?.addEventListener("click", () => toggleMedia("audio"));
+toggleVideoBtn?.addEventListener("click", () => toggleMedia("video"));
 
-leaveCallBtn.addEventListener("click", endCall);
-toggleMicBtn.addEventListener("click", toggleMic);
-toggleVideoBtn.addEventListener("click", toggleVideo);
-
-acceptCallBtn.addEventListener("click", () => {
+acceptCallBtn?.addEventListener("click", () => {
   incomingCallModal.classList.add("hidden");
-  // When accepting, we join the call. 
-  // Usually we default to Video for now unless we know it's audio only?
-  // Let's assume video for simplicity or we could pass that info.
-  startCall(false);
+  startCall({ audio: true, video: true });
 });
 
-rejectCallBtn.addEventListener("click", () => {
+rejectCallBtn?.addEventListener("click", () => {
   incomingCallModal.classList.add("hidden");
-  incomingCallData = null;
 });
 
+// --- CORE FUNCTIONS ---
 
-// --- FUNCTIONS ---
-
-async function startCall(audioOnly) {
-  isAudioOnly = audioOnly;
-
+async function startCall(constraints) {
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: !audioOnly
-    });
-
-    // Show UI
+    localStream = await navigator.mediaDevices.getUserMedia(constraints);
     callContainer.classList.remove("hidden");
-
-    // Add Local Video
     addVideoStream(localStream, "You", true);
-
-    // Signal Join
     socket.emit("join-call");
-
-    // Initial button states
     updateControlStates();
-
   } catch (err) {
-    console.error("Error accessing media devices:", err);
-    alert("Could not access camera/microphone. Please check permissions.");
+    console.error("Media Error:", err);
+    alert("Failed to access camera/mic.");
+  }
+}
+
+function toggleMedia(type) {
+  if (!localStream) return;
+  const track = type === "audio" ? localStream.getAudioTracks()[0] : localStream.getVideoTracks()[0];
+  if (track) {
+    track.enabled = !track.enabled;
+    const btn = type === "audio" ? toggleMicBtn : toggleVideoBtn;
+    btn.classList.toggle("active", !track.enabled);
   }
 }
 
 function updateControlStates() {
-  if (localStream) {
-    const audioTrack = localStream.getAudioTracks()[0];
-    const videoTrack = localStream.getVideoTracks()[0];
-
-    if (audioTrack) {
-      toggleMicBtn.classList.toggle("active", !audioTrack.enabled);
-    }
-    if (videoTrack) {
-      toggleVideoBtn.classList.toggle("active", !videoTrack.enabled);
-    }
-  }
-}
-
-function toggleMic() {
-  if (localStream) {
-    const audioTrack = localStream.getAudioTracks()[0];
-    if (audioTrack) {
-      audioTrack.enabled = !audioTrack.enabled;
-      toggleMicBtn.classList.toggle("active", !audioTrack.enabled);
-    }
-  }
-}
-
-function toggleVideo() {
-  if (localStream) {
-    if (isAudioOnly) {
-      alert("Video disabled in Audio Call mode.");
-      return;
-    }
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (videoTrack) {
-      videoTrack.enabled = !videoTrack.enabled;
-      toggleVideoBtn.classList.toggle("active", !videoTrack.enabled);
-    }
-  }
+  if (!localStream) return;
+  toggleMicBtn.classList.toggle("active", !localStream.getAudioTracks()[0]?.enabled);
+  toggleVideoBtn.classList.toggle("active", !localStream.getVideoTracks()[0]?.enabled);
 }
 
 function endCall() {
   callContainer.classList.add("hidden");
-
-  // Stop tracks
   if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
+    localStream.getTracks().forEach(t => t.stop());
     localStream = null;
   }
-
-  // Close peers
-  Object.values(peers).forEach(pc => pc.close());
+  Object.keys(peers).forEach(id => {
+    peers[id].close();
+    document.getElementById(`video-${id}`)?.parentElement.remove();
+  });
   peers = {};
-
-  // Clear Grid
-  videoGrid.innerHTML = "";
-
   socket.emit("leave-call");
 }
 
-function addVideoStream(stream, label, isLocal) {
-  const videoCard = document.createElement("div");
-  videoCard.className = "video-card";
+function addVideoStream(stream, label, isLocal, socketId = null) {
+  const id = isLocal ? "local" : `video-${socketId}`;
+  if (document.getElementById(id)) return;
 
-  const video = document.createElement("video");
+  const card = document.createElement("div");
+  card.className = "video-card";
+  card.innerHTML = `
+        <video autoplay ${isLocal ? "muted" : ""}></video>
+        <div class="user-label">${label}</div>
+    `;
+  const video = card.querySelector("video");
   video.srcObject = stream;
-  video.autoplay = true;
-  if (isLocal) video.muted = true; // Mute self
-
-  const labelDiv = document.createElement("div");
-  labelDiv.className = "user-label";
-  labelDiv.innerText = label || "User";
-
-  videoCard.appendChild(video);
-  videoCard.appendChild(labelDiv);
-  videoGrid.appendChild(videoCard);
-
-  return videoCard;
+  video.id = id;
+  videoGrid.appendChild(card);
+  return card;
 }
 
-
-// --- SIGNALING EVENTS ---
-
-socket.on("ongoing-call", ({ participants }) => {
-  console.log(`Ongoing call with ${participants} users.`);
-  // Could subtly animate call buttons to indicate active call
-});
+// --- SIGNALING ---
 
 socket.on("incoming-call", ({ caller }) => {
-  // Only show if NOT already in a call
   if (callContainer.classList.contains("hidden")) {
     callerNameSpan.innerText = `${caller} is calling...`;
     incomingCallModal.classList.remove("hidden");
-    incomingCallData = { caller };
   }
 });
 
-socket.on("all-users-in-call", (usersInCall) => {
-  // Joined call -> Initiate connections to existing
-  console.log("Existing users in call:", usersInCall);
-  usersInCall.forEach(socketId => {
-    createPeerConnection(socketId, true); // initiator = true
-  });
+socket.on("all-users-in-call", (users) => {
+  users.forEach(id => createPeerConnection(id, true));
 });
 
-socket.on("user-connected-to-call", (socketId) => {
-  // Existing user -> New user joined -> Wait for offer (initiator = false)
-  console.log("User connected to call:", socketId);
-  createPeerConnection(socketId, false);
+socket.on("user-connected-to-call", (id) => {
+  createPeerConnection(id, false);
 });
 
-socket.on("user-left-call", (socketId) => {
-  if (peers[socketId]) {
-    peers[socketId].close();
-    delete peers[socketId];
+socket.on("user-left-call", (id) => {
+  if (peers[id]) {
+    peers[id].close();
+    delete peers[id];
   }
-  const videoElement = document.getElementById(`video-${socketId}`);
-  if (videoElement) {
-    videoElement.parentElement.remove(); // Remove the card
-  }
+  document.getElementById(`video-${id}`)?.parentElement.remove();
 });
-
-socket.on("call-ended", () => {
-  // Optional
-});
-
-
-// --- WEBRTC CORE ---
 
 function createPeerConnection(socketId, isInitiator) {
   if (peers[socketId]) return peers[socketId];
@@ -295,71 +214,38 @@ function createPeerConnection(socketId, isInitiator) {
   const pc = new RTCPeerConnection(rtcConfig);
   peers[socketId] = pc;
 
-  if (localStream) {
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-  }
+  localStream?.getTracks().forEach(t => pc.addTrack(t, localStream));
 
-  pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      socket.emit("ice-candidate", {
-        target: socketId,
-        candidate: event.candidate
-      });
-    }
+  pc.onicecandidate = ({ candidate }) => {
+    if (candidate) socket.emit("ice-candidate", { target: socketId, candidate });
   };
 
-  pc.ontrack = (event) => {
-    console.log("Received remote track from", socketId);
-    let videoCardId = `video-${socketId}`;
-    let videoCard = document.getElementById(videoCardId);
-    if (!videoCard) {
-      // Fetch username via users list logic or temp tag?
-      // For now just "User"
-      videoCard = addVideoStream(event.streams[0], "User", false);
-      videoCard.querySelector("video").id = videoCardId; // Mark video or card?
-      videoCard.id = videoCardId;
-    }
+  pc.ontrack = ({ streams }) => {
+    addVideoStream(streams[0], "User", false, socketId);
   };
 
   if (isInitiator) {
     pc.createOffer()
       .then(offer => pc.setLocalDescription(offer))
-      .then(() => {
-        socket.emit("offer", {
-          target: socketId,
-          sdp: pc.localDescription
-        });
-      })
-      .catch(err => console.error("Error creating offer:", err));
+      .then(() => socket.emit("offer", { target: socketId, sdp: pc.localDescription }))
+      .catch(console.error);
   }
 
   return pc;
 }
 
 socket.on("offer", async ({ sender, sdp }) => {
-  // 'sender' is the ID of who sent the offer.
   const pc = createPeerConnection(sender, false);
   await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-
   const answer = await pc.createAnswer();
   await pc.setLocalDescription(answer);
-
-  socket.emit("answer", {
-    target: sender,
-    sdp: pc.localDescription
-  });
+  socket.emit("answer", { target: sender, sdp: pc.localDescription });
 });
 
 socket.on("answer", async ({ sender, sdp }) => {
-  const pc = peers[sender];
-  if (pc) {
-    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-  }
+  await peers[sender]?.setRemoteDescription(new RTCSessionDescription(sdp));
 });
 
 socket.on("ice-candidate", async ({ sender, candidate }) => {
-  const pc = peers[sender];
-  if (pc) {
-    await pc.addIceCandidate(new RTCIceCandidate(candidate));
-  }
+  await peers[sender]?.addIceCandidate(new RTCIceCandidate(candidate));
 });
