@@ -1,24 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-  <title>Join Chat</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect - Professional Chat Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="home.css">
 </head>
+
 <body>
-  <div class="home">
-    <form class="join-form" action="chat.html">
-      <h2>Welcome To Stark's Chat Room</h2>
+  <div class="background-blob blob-1"></div>
+  <div class="background-blob blob-2"></div>
 
-      <input type="text" name="username" placeholder="Your name" required />
+  <main class="home-container">
+    <div class="glass-card">
+      <header class="card-header">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 13.4876 3.36093 14.891 4 16.1272L3 21L7.8728 20C9.10898 20.6391 10.5124 21 12 21Z"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <h1>Connect</h1>
+        </div>
+        <p>Real-time collaboration made simple.</p>
+      </header>
 
-      <select name="room" required>
-        <option value="general">General</option>
-        <option value="tech">Tech</option>
-        <option value="gaming">Gaming</option>
-      </select>
+      <form class="join-form" action="chat.html">
+        <div class="input-group">
+          <label for="username">Display Name</label>
+          <input type="text" id="username" name="username" placeholder="Enter your name" required />
+        </div>
 
-      <button type="submit">Join</button>
-    </form>
-  </div>
+        <div class="input-group">
+          <label for="room">Select Room</label>
+          <div class="select-wrapper">
+            <select id="room" name="room" required>
+              <option value="general">General Discussion</option>
+              <option value="tech">Tech & Development</option>
+              <option value="gaming">Gaming Zone</option>
+              <option value="business">Business & Networking</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="join-btn">
+          <span>Join Chat</span>
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </button>
+      </form>
+    </div>
+  </main>
 </body>
+
 </html>

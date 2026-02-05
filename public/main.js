@@ -4,7 +4,8 @@ const params = new URLSearchParams(window.location.search);
 const username = params.get("username");
 const room = params.get("room");
 
-document.getElementById("roomName").innerText = "Room: " + room;
+const roomDisplay = room ? room.charAt(0).toUpperCase() + room.slice(1) : "General";
+document.getElementById("roomName").innerText = roomDisplay;
 
 socket.emit("joinRoom", { username, room });
 
@@ -20,7 +21,7 @@ function addMessage(data) {
   }
 
   const isSelf = data.username === username;
-  const msgClass = isSelf ? "message self" : "message";
+  const msgClass = isSelf ? "message self" : "message other";
 
   const time = data.timestamp
     ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -66,7 +67,8 @@ socket.on("message", (data) => {
 });
 
 socket.on("notification", (msg) => {
-  messages.innerHTML += `<p class="notify">${msg}</p>`;
+  messages.innerHTML += `<div class="system-notification">${msg}</div>`;
+  messages.scrollTop = messages.scrollHeight;
 });
 
 socket.on("typing", (msg) => {
@@ -79,9 +81,10 @@ socket.on("typing", (msg) => {
 socket.on("userList", (users) => {
   usersList.innerHTML = "";
   users.forEach((u) => {
-    usersList.innerHTML += `<li>${u.username}</li>`;
+    const li = document.createElement("li");
+    li.textContent = u.username;
+    usersList.appendChild(li);
   });
-
 });
 
 // =========================
@@ -105,6 +108,23 @@ const rejectCallBtn = document.getElementById("rejectCallBtn");
 let localStream;
 let peers = {}; // socketId -> RTCPeerConnection
 const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+const menuToggle = document.getElementById("menuToggle");
+const sidebar = document.querySelector(".sidebar");
+
+menuToggle?.addEventListener("click", () => {
+  sidebar.classList.toggle("active");
+});
+
+// Close sidebar when clicking outside on mobile
+document.addEventListener("click", (e) => {
+  if (window.innerWidth <= 768 &&
+    !sidebar.contains(e.target) &&
+    !menuToggle.contains(e.target) &&
+    sidebar.classList.contains("active")) {
+    sidebar.classList.remove("active");
+  }
+});
 
 // --- BUTTONS ---
 audioCallBtn?.addEventListener("click", () => startCall({ audio: true, video: false }));
@@ -171,23 +191,35 @@ function endCall() {
 }
 
 function addVideoStream(stream, label, isLocal, socketId = null) {
-  const id = isLocal ? "local" : `video-${socketId}`;
-  if (document.getElementById(id)) return;
+  const videoId = isLocal ? "local" : `video-${socketId}`;
+  if (document.getElementById(videoId)) return;
 
   const card = document.createElement("div");
-  card.className = "video-card";
+  card.className = `video-card ${isLocal ? "local" : "remote"}`;
+
   card.innerHTML = `
-        <video autoplay ${isLocal ? "muted" : ""}></video>
+        <video autoplay ${isLocal ? "muted" : ""} id="${videoId}"></video>
         <div class="user-label">${label}</div>
     `;
+
   const video = card.querySelector("video");
   video.srcObject = stream;
-  video.id = id;
   videoGrid.appendChild(card);
   return card;
 }
 
 // --- SIGNALING ---
+
+socket.on("ongoing-call", ({ participants }) => {
+  const msg = `<div class="system-notification">Ongoing call in this room (${participants} participants). <button onclick="startCall({audio:true, video:true})" class="inline-link">Join Call</button></div>`;
+  messages.innerHTML += msg;
+  messages.scrollTop = messages.scrollHeight;
+});
+
+socket.on("call-ended", () => {
+  messages.innerHTML += `<div class="system-notification">The call has ended.</div>`;
+  messages.scrollTop = messages.scrollHeight;
+});
 
 socket.on("incoming-call", ({ caller }) => {
   if (callContainer.classList.contains("hidden")) {

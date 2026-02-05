@@ -18,6 +18,14 @@ module.exports = (io) => {
         (u) => u.room === room
       );
 
+       async function loadMessages() {
+      const messages = await Msg.find().sort({ timestamp: -1 }).limit(20);
+      socket.emit("loadMessages", messages.reverse());
+    }
+
+loadMessages();
+
+
       io.to(room).emit("userList", roomUsers);
 
       // Send active call status to the joining user
@@ -117,12 +125,8 @@ module.exports = (io) => {
 
     // ------------------------
 
-    async function loadMessages() {
-      const messages = await Msg.find().sort({ timestamp: -1 }).limit(15).sort({ timestamp: 1 });
-      socket.emit("loadMessages", messages);
-    }
-    loadMessages();
-
+   
+  
     socket.on("disconnect", () => {
       const user = users[socket.id];
       if (user) {
