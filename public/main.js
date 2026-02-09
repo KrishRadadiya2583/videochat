@@ -48,6 +48,7 @@ msgForm.addEventListener("submit", (e) => {
     socket.emit("chatMessage", msg.value);
     msg.value = "";
   }
+  messages.scrollTop = messages.scrollHeight;
 });
 
 msg.addEventListener("input", () => {
