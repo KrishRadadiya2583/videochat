@@ -18,12 +18,12 @@ module.exports = (io) => {
         (u) => u.room === room
       );
 
-       async function loadMessages() {
-      const messages = await Msg.find().sort({ timestamp: -1 }).limit(20);
-      socket.emit("loadMessages", messages.reverse());
-    }
+      async function loadMessages() {
+        const messages = await Msg.find().sort({ timestamp: -1 }).limit(20);
+        socket.emit("loadMessages", messages.reverse());
+      }
 
-loadMessages();
+      loadMessages();
 
 
       io.to(room).emit("userList", roomUsers);
@@ -125,8 +125,8 @@ loadMessages();
 
     // ------------------------
 
-   
-  
+
+
     socket.on("disconnect", () => {
       const user = users[socket.id];
       if (user) {

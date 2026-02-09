@@ -15,6 +15,12 @@ const messages = document.getElementById("messages");
 const typing = document.getElementById("typing");
 const usersList = document.getElementById("users");
 
+const chatViewport = document.querySelector(".chat-viewport");
+
+function scrollToBottom() {
+  chatViewport.scrollTop = chatViewport.scrollHeight;
+}
+
 function addMessage(data) {
   if (!data.message || data.message.trim().length === 0) {
     return;
@@ -39,7 +45,7 @@ function addMessage(data) {
     </div>
   `;
 
-  messages.scrollTop = messages.scrollHeight;
+  scrollToBottom();
 }
 
 msgForm.addEventListener("submit", (e) => {
@@ -47,8 +53,8 @@ msgForm.addEventListener("submit", (e) => {
   if (msg.value.trim()) {
     socket.emit("chatMessage", msg.value);
     msg.value = "";
+    scrollToBottom();
   }
-  messages.scrollTop = messages.scrollHeight;
 });
 
 msg.addEventListener("input", () => {
@@ -60,7 +66,7 @@ socket.on("loadMessages", function (msgs) {
   for (let i = 0; i < msgs.length; i++) {
     addMessage(msgs[i]);
   }
-  messages.scrollTop = messages.scrollHeight;
+  scrollToBottom();
 });
 
 socket.on("message", (data) => {
@@ -69,7 +75,7 @@ socket.on("message", (data) => {
 
 socket.on("notification", (msg) => {
   messages.innerHTML += `<div class="system-notification">${msg}</div>`;
-  messages.scrollTop = messages.scrollHeight;
+  scrollToBottom();
 });
 
 socket.on("typing", (msg) => {
@@ -214,12 +220,12 @@ function addVideoStream(stream, label, isLocal, socketId = null) {
 socket.on("ongoing-call", ({ participants }) => {
   const msg = `<div class="system-notification">Ongoing call in this room (${participants} participants). <button onclick="startCall({audio:true, video:true})" class="inline-link">Join Call</button></div>`;
   messages.innerHTML += msg;
-  messages.scrollTop = messages.scrollHeight;
+  scrollToBottom();
 });
 
 socket.on("call-ended", () => {
   messages.innerHTML += `<div class="system-notification">The call has ended.</div>`;
-  messages.scrollTop = messages.scrollHeight;
+  scrollToBottom();
 });
 
 socket.on("incoming-call", ({ caller }) => {
