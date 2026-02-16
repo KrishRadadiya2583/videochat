@@ -80,13 +80,13 @@ fileInput.addEventListener("change", function () {
 
   if (!file) return;
 
-// file show card 
+  // file show card 
   const previewCard = document.createElement("div");
   previewCard.style.display = "flex";
   previewCard.style.alignItems = "center";
   previewCard.style.gap = "8px";
 
-  
+
   if (file.type.startsWith("image/")) {
     const img = document.createElement("img");
     img.className = "preview-image";
@@ -98,7 +98,7 @@ fileInput.addEventListener("change", function () {
 
     previewCard.appendChild(img);
   } else {
-   
+
     const icon = document.createElement("span");
     icon.className = "preview-file-icon";
     icon.innerHTML = "📄";
@@ -116,14 +116,14 @@ fileInput.addEventListener("change", function () {
   removeBtn.innerHTML = "✖";
   removeBtn.title = "Remove file";
   removeBtn.onclick = (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
     clearFileSelection();
   };
   previewCard.appendChild(removeBtn);
 
   previewContainer.appendChild(previewCard);
 
-  
+
   msg.focus();
 });
 
@@ -191,7 +191,7 @@ msg.addEventListener("input", () => {
 });
 
 socket.on("loadMessages", function (msgs) {
-  messages.innerHTML = ""; 
+  messages.innerHTML = "";
   for (let i = 0; i < msgs.length; i++) {
     addMessage(msgs[i]);
   }
@@ -240,6 +240,8 @@ const incomingCallModal = document.getElementById("incomingCallModal");
 const callerNameSpan = document.getElementById("callerName");
 const acceptCallBtn = document.getElementById("acceptCallBtn");
 const rejectCallBtn = document.getElementById("rejectCallBtn");
+const screenShareBtn = document.getElementById("screenShareBtn");
+
 
 let localStream;
 let peers = {}; // socketId -> RTCPeerConnection
@@ -254,9 +256,9 @@ menuToggle?.addEventListener("click", () => {
 
 // Close sidebar when clicking outside on mobile
 document.addEventListener("click", (e) => {
-  
+
   // responsive sidebar
-  if (window.innerWidth <= 768 && 
+  if (window.innerWidth <= 768 &&
     !sidebar.contains(e.target) &&
     !menuToggle.contains(e.target) &&
     sidebar.classList.contains("active")) {
@@ -268,7 +270,7 @@ document.addEventListener("click", (e) => {
 
 if (audioCallBtn) {
   audioCallBtn.addEventListener("click", function () {
-   
+
     startCall({ audio: true, video: false });
   });
 }
@@ -276,7 +278,7 @@ if (audioCallBtn) {
 
 if (videoCallBtn) {
   videoCallBtn.addEventListener("click", function () {
-   
+
     startCall({ audio: true, video: true });
   });
 }
@@ -284,15 +286,19 @@ if (videoCallBtn) {
 
 if (leaveCallBtn) {
   leaveCallBtn.addEventListener("click", function () {
- 
+
     endCall();
   });
 }
 
 
+if (screenShareBtn) {
+  screenShareBtn.addEventListener("click", toggleScreenShare);
+}
+
 if (leaveChatBtn) {
   leaveChatBtn.addEventListener("click", function () {
-   
+
     window.location.href = "index.html";
   });
 }
@@ -300,7 +306,7 @@ if (leaveChatBtn) {
 
 if (toggleMicBtn) {
   toggleMicBtn.addEventListener("click", function () {
-  
+
     toggleMedia("audio");
   });
 }
@@ -308,7 +314,7 @@ if (toggleMicBtn) {
 
 if (toggleVideoBtn) {
   toggleVideoBtn.addEventListener("click", function () {
- 
+
     toggleMedia("video");
   });
 }
@@ -316,7 +322,7 @@ if (toggleVideoBtn) {
 
 if (acceptCallBtn) {
   acceptCallBtn.addEventListener("click", function () {
-   
+
     incomingCallModal.classList.add("hidden");
 
     startCall({ audio: true, video: true });
@@ -346,6 +352,88 @@ async function startCall(constraints) {
   }
 }
 
+let isScreenSharing = false;
+let screenStream;
+
+async function toggleScreenShare() {
+  if (!localStream) {
+    alert("You must be in a call to share your screen.");
+    return;
+  }
+
+  if (!isScreenSharing) {
+    try {
+      screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      const screenTrack = screenStream.getVideoTracks()[0];
+
+      // Handle user stopping screen share from browser UI
+      screenTrack.onended = () => {
+        if (isScreenSharing) toggleScreenShare();
+      };
+
+      // Replace track for local view
+      if (localStream.getVideoTracks()[0]) {
+        localStream.removeTrack(localStream.getVideoTracks()[0]);
+      }
+      localStream.addTrack(screenTrack);
+
+      const localVideo = document.getElementById("local");
+      if (localVideo) {
+        localVideo.srcObject = localStream;
+      }
+
+      // Replace track for all peers
+      for (let id in peers) {
+        const sender = peers[id].getSenders().find(s => s.track.kind === "video");
+        if (sender) {
+          sender.replaceTrack(screenTrack);
+        }
+      }
+
+      screenShareBtn.classList.add("active");
+      isScreenSharing = true;
+
+    } catch (err) {
+      console.error("Error sharing screen:", err);
+    }
+  } else {
+    // Stop screen sharing and revert to camera
+    try {
+      const screenTrack = localStream.getVideoTracks()[0];
+      if (screenTrack) screenTrack.stop(); // Stop the screen share stream
+
+      const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const cameraTrack = cameraStream.getVideoTracks()[0];
+
+      if (localStream.getVideoTracks()[0]) {
+        localStream.removeTrack(localStream.getVideoTracks()[0]);
+      }
+      localStream.addTrack(cameraTrack);
+
+      const localVideo = document.getElementById("local");
+      if (localVideo) {
+        localVideo.srcObject = localStream;
+      }
+
+      // Replace track for all peers
+      for (let id in peers) {
+        const sender = peers[id].getSenders().find(s => s.track.kind === "video");
+        if (sender) {
+          sender.replaceTrack(cameraTrack);
+        }
+      }
+
+      screenShareBtn.classList.remove("active");
+      isScreenSharing = false;
+      screenStream = null;
+
+    } catch (err) {
+      console.error("Error reverting to camera:", err);
+      alert("Failed to revert to camera.");
+    }
+  }
+}
+
 function toggleMedia(type) {
 
   if (!localStream) {
@@ -363,12 +451,12 @@ function toggleMedia(type) {
 
   if (track) {
     if (track.enabled) {
-      track.enabled = false;  
+      track.enabled = false;
     } else {
-      track.enabled = true;  
+      track.enabled = true;
     }
 
-  
+
     if (type === "audio") {
       toggleMicBtn.classList.toggle("active", !track.enabled);
     } else {
