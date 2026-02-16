@@ -25,10 +25,10 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.post("/upload", upload.single("file"), (req, res) => {
     if (!req.file) {
-        return res.status(400).send("No file uploaded.");
+        return res.status(400).json({ message: "No file uploaded" });
     }
     res.json({
-        filePath: `/uploads/${req.file.filename}`,
+        filePath: req.file.path,
         fileType: req.file.mimetype
     });
 });

@@ -1,4 +1,4 @@
-const socket = io();
+const socket = io(); // socket connection
 
 const params = new URLSearchParams(window.location.search);
 const username = params.get("username");
@@ -21,8 +21,11 @@ function scrollToBottom() {
   chatViewport.scrollTop = chatViewport.scrollHeight;
 }
 
+
+// message add function
+
 function addMessage(data) {
-  // function addMessage(data) { ... } logic
+
   const msgText = data.message || "";
   const fileUrl = data.fileUrl;
 
@@ -32,6 +35,7 @@ function addMessage(data) {
 
   const isSelf = data.username === username;
   const msgClass = isSelf ? "message self" : "message other";
+
 
   const time = data.timestamp
     ? new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -65,64 +69,61 @@ function addMessage(data) {
 }
 
 
-// --- File Upload & Preview Logic ---
+// preview
 const fileInput = document.getElementById("file");
 const previewContainer = document.getElementById("previewContainer");
 
-// Listen for file selection
 fileInput.addEventListener("change", function () {
   const file = this.files[0];
 
-  // Clear previous preview
   previewContainer.innerHTML = "";
 
   if (!file) return;
 
-  // Create a small preview card
+// file show card 
   const previewCard = document.createElement("div");
   previewCard.style.display = "flex";
   previewCard.style.alignItems = "center";
   previewCard.style.gap = "8px";
 
-  // Check file type for preview
+  
   if (file.type.startsWith("image/")) {
     const img = document.createElement("img");
     img.className = "preview-image";
 
-    // Read the file to show a thumbnail
+
     const reader = new FileReader();
     reader.onload = (e) => { img.src = e.target.result; };
     reader.readAsDataURL(file);
 
     previewCard.appendChild(img);
   } else {
-    // Generic icon for non-image files
+   
     const icon = document.createElement("span");
     icon.className = "preview-file-icon";
     icon.innerHTML = "📄";
     previewCard.appendChild(icon);
   }
 
-  // File Name
   const fileName = document.createElement("span");
   fileName.className = "preview-text";
   fileName.textContent = file.name;
   previewCard.appendChild(fileName);
 
-  // Remove Button (X)
+
   const removeBtn = document.createElement("button");
   removeBtn.className = "remove-preview";
   removeBtn.innerHTML = "✖";
   removeBtn.title = "Remove file";
   removeBtn.onclick = (e) => {
-    e.preventDefault(); // prevent form submit
+    e.preventDefault(); 
     clearFileSelection();
   };
   previewCard.appendChild(removeBtn);
 
   previewContainer.appendChild(previewCard);
 
-  // Focus on message input so user can type immediately
+  
   msg.focus();
 });
 
@@ -134,20 +135,17 @@ function clearFileSelection() {
 
 
 
-// --- Message Submission ---
 msgForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const file = fileInput.files[0];
   const messageText = msg.value.trim();
 
-  // If no message and no file, do nothing
   if (!messageText && !file) return;
 
   let fileUrl = null;
   let fileType = null;
 
-  // 1. Upload File if selected
   if (file) {
     try {
       const formData = new FormData();
@@ -165,7 +163,7 @@ msgForm.addEventListener("submit", async (e) => {
       } else {
         console.error("File upload failed");
         alert("Failed to upload file. Please try again.");
-        return; // Stop if upload fails
+        return;
       }
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -174,7 +172,6 @@ msgForm.addEventListener("submit", async (e) => {
     }
   }
 
-  // 2. Send Message via Socket
   const payload = {
     message: messageText,
     fileUrl: fileUrl,
@@ -183,11 +180,9 @@ msgForm.addEventListener("submit", async (e) => {
 
   socket.emit("chatMessage", payload);
 
-  // 3. Clear Inputs
   msg.value = "";
   clearFileSelection();
 
-  // Focus back to input
   msg.focus();
 });
 
@@ -196,7 +191,7 @@ msg.addEventListener("input", () => {
 });
 
 socket.on("loadMessages", function (msgs) {
-  messages.innerHTML = ""; // Clear existing messages before loading to avoid duplicates if reconnected
+  messages.innerHTML = ""; 
   for (let i = 0; i < msgs.length; i++) {
     addMessage(msgs[i]);
   }
@@ -259,7 +254,9 @@ menuToggle?.addEventListener("click", () => {
 
 // Close sidebar when clicking outside on mobile
 document.addEventListener("click", (e) => {
-  if (window.innerWidth <= 768 &&
+  
+  // responsive sidebar
+  if (window.innerWidth <= 768 && 
     !sidebar.contains(e.target) &&
     !menuToggle.contains(e.target) &&
     sidebar.classList.contains("active")) {
@@ -267,24 +264,72 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// --- BUTTONS ---
-audioCallBtn?.addEventListener("click", () => startCall({ audio: true, video: false }));
-videoCallBtn?.addEventListener("click", () => startCall({ audio: true, video: true }));
-leaveCallBtn?.addEventListener("click", endCall);
-leaveChatBtn?.addEventListener("click", () => {
-  window.location.href = "index.html";
-});
-toggleMicBtn?.addEventListener("click", () => toggleMedia("audio"));
-toggleVideoBtn?.addEventListener("click", () => toggleMedia("video"));
 
-acceptCallBtn?.addEventListener("click", () => {
-  incomingCallModal.classList.add("hidden");
-  startCall({ audio: true, video: true });
-});
 
-rejectCallBtn?.addEventListener("click", () => {
-  incomingCallModal.classList.add("hidden");
-});
+if (audioCallBtn) {
+  audioCallBtn.addEventListener("click", function () {
+   
+    startCall({ audio: true, video: false });
+  });
+}
+
+
+if (videoCallBtn) {
+  videoCallBtn.addEventListener("click", function () {
+   
+    startCall({ audio: true, video: true });
+  });
+}
+
+
+if (leaveCallBtn) {
+  leaveCallBtn.addEventListener("click", function () {
+ 
+    endCall();
+  });
+}
+
+
+if (leaveChatBtn) {
+  leaveChatBtn.addEventListener("click", function () {
+   
+    window.location.href = "index.html";
+  });
+}
+
+
+if (toggleMicBtn) {
+  toggleMicBtn.addEventListener("click", function () {
+  
+    toggleMedia("audio");
+  });
+}
+
+
+if (toggleVideoBtn) {
+  toggleVideoBtn.addEventListener("click", function () {
+ 
+    toggleMedia("video");
+  });
+}
+
+
+if (acceptCallBtn) {
+  acceptCallBtn.addEventListener("click", function () {
+   
+    incomingCallModal.classList.add("hidden");
+
+    startCall({ audio: true, video: true });
+  });
+}
+
+if (rejectCallBtn) {
+  rejectCallBtn.addEventListener("click", function () {
+
+    incomingCallModal.classList.add("hidden");
+  });
+}
+
 
 // --- CORE FUNCTIONS ---
 
@@ -302,14 +347,36 @@ async function startCall(constraints) {
 }
 
 function toggleMedia(type) {
-  if (!localStream) return;
-  const track = type === "audio" ? localStream.getAudioTracks()[0] : localStream.getVideoTracks()[0];
+
+  if (!localStream) {
+    return;
+  }
+
+  let track;
+
+
+  if (type === "audio") {
+    track = localStream.getAudioTracks()[0];
+  } else {
+    track = localStream.getVideoTracks()[0];
+  }
+
   if (track) {
-    track.enabled = !track.enabled;
-    const btn = type === "audio" ? toggleMicBtn : toggleVideoBtn;
-    btn.classList.toggle("active", !track.enabled);
+    if (track.enabled) {
+      track.enabled = false;  
+    } else {
+      track.enabled = true;  
+    }
+
+  
+    if (type === "audio") {
+      toggleMicBtn.classList.toggle("active", !track.enabled);
+    } else {
+      toggleVideoBtn.classList.toggle("active", !track.enabled);
+    }
   }
 }
+
 
 function updateControlStates() {
   if (!localStream) return;
