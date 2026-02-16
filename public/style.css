@@ -256,11 +256,111 @@ body {
 
 @media (max-width: 600px) {
   .message {
-    max-width: 90%;
+    max-width: 88%;
   }
 
   .chat-viewport {
-    padding: 16px;
+    padding: 12px;
+  }
+
+  .chat-header {
+    padding: 0 16px;
+    height: 64px;
+  }
+
+  .header-actions {
+    gap: 8px;
+  }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .room-info h2 {
+    font-size: 1rem;
+  }
+
+  .chat-footer {
+    padding: 12px 16px;
+  }
+
+  .send-btn {
+    width: 42px;
+    height: 42px;
+  }
+}
+
+/* Tablet / Laptop Specifics */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar {
+    width: 240px;
+  }
+
+  .message {
+    max-width: 80%;
+  }
+}
+
+/* TV / Large Screens */
+@media (min-width: 1921px) {
+  body {
+    font-size: 18px;
+  }
+
+  .sidebar {
+    width: 350px;
+  }
+
+  .logo {
+    font-size: 1.5rem;
+  }
+
+  .logo svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .section-label {
+    font-size: 0.9rem;
+  }
+
+  .users-list li {
+    padding: 14px 18px;
+    font-size: 1.1rem;
+  }
+
+  .chat-header {
+    height: 80px;
+  }
+
+  .room-info h2 {
+    font-size: 1.5rem;
+  }
+
+  .icon-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .message {
+    max-width: 60%;
+    /* Prevent lines from being too long on wide screens */
+    padding: 16px 24px;
+  }
+
+  .message-text {
+    font-size: 1.1rem;
+  }
+
+  .message-form input {
+    padding: 16px 24px;
+    font-size: 1.1rem;
+  }
+
+  .send-btn {
+    width: 56px;
+    height: 56px;
   }
 }
 

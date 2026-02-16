@@ -67,6 +67,57 @@ body {
   z-index: 1;
 }
 
+/* Mobile Small */
+@media (max-width: 480px) {
+  .home-container {
+    padding: 16px;
+    max-width: 100%;
+  }
+
+  .glass-card {
+    padding: 24px;
+    border-radius: 20px;
+  }
+
+  .logo h1 {
+    font-size: 1.75rem;
+  }
+}
+
+/* TV / Large Screens */
+@media (min-width: 1921px) {
+  .home-container {
+    max-width: 600px;
+  }
+
+  .glass-card {
+    padding: 60px;
+  }
+
+  .logo h1 {
+    font-size: 3rem;
+  }
+
+  .card-header p {
+    font-size: 1.25rem;
+  }
+
+  .input-group label {
+    font-size: 1.1rem;
+  }
+
+  .input-group input,
+  .input-group select {
+    padding: 16px 20px;
+    font-size: 1.2rem;
+  }
+
+  .join-btn {
+    font-size: 1.2rem;
+    padding: 18px;
+  }
+}
+
 .glass-card {
   background: var(--glass);
   backdrop-filter: blur(16px);
