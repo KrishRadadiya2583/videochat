@@ -552,8 +552,9 @@ function createPeerConnection(socketId, isInitiator) {
     if (candidate) socket.emit("ice-candidate", { target: socketId, candidate });
   };
 
+  const name = peers[socketId]?.username || "User";
   pc.ontrack = ({ streams }) => {
-    addVideoStream(streams[0], "User", false, socketId);
+    addVideoStream(streams[0], name, false, socketId);
   };
 
   if (isInitiator) {
