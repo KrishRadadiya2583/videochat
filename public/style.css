@@ -702,3 +702,125 @@ body {
   padding: 32px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
+
+
+/* =========================
+   FILE UPLOAD & PREVIEW
+========================= */
+
+.file-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-label {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-right: 8px;
+}
+
+.file-label:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.file-label svg {
+  width: 20px;
+  height: 20px;
+}
+
+.preview-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 5px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  animation: fadeIn 0.3s ease;
+}
+
+.preview-container:empty {
+  display: none;
+}
+
+.preview-image {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.preview-file-icon {
+  font-size: 1.2rem;
+}
+
+.preview-text {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  max-width: 100px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.remove-preview {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  margin-left: 5px;
+}
+
+.remove-preview:hover {
+  opacity: 0.8;
+}
+
+/* Chat Images */
+.chat-image {
+  max-width: 100%;
+  border-radius: 12px;
+  margin-top: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.chat-image:hover {
+  transform: scale(1.02);
+}
+
+.file-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 8px;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.file-link:hover {
+  background: rgba(0, 0, 0, 0.3);
+}

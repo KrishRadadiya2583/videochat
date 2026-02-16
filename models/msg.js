@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const msgSchema = new mongoose.Schema({
     username: String,
     message: String,
+    fileUrl: String,
+    fileType: String,
 
     timestamp: {
         type: Date,

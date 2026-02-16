@@ -34,23 +34,34 @@ module.exports = (io) => {
       }
     });
 
-    socket.on("chatMessage", async (msg) => {
+    socket.on("chatMessage", async (data) => {
       const user = users[socket.id];
       if (!user) return;
 
       const timestamp = new Date();
+      let messageContent = "";
+      let fileUrl = null;
+      let fileType = null;
 
-      io.to(user.room).emit("message", {
-        username: user.username,
-        message: msg,
-        timestamp: timestamp
-      });
+      if (typeof data === "object") {
+        messageContent = data.message || "";
+        fileUrl = data.fileUrl;
+        fileType = data.fileType;
+      } else {
+        messageContent = data;
+      }
 
-      const message = new Msg({
+      const msgPayload = {
         username: user.username,
-        message: msg,
+        message: messageContent,
+        fileUrl: fileUrl,
+        fileType: fileType,
         timestamp: timestamp
-      });
+      };
+
+      io.to(user.room).emit("message", msgPayload);
+
+      const message = new Msg(msgPayload);
 
       await message.save();
       console.log("Message saved to database");

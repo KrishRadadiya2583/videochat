@@ -75,12 +75,27 @@
 
       <div class="chat-viewport">
         <div id="messages" class="messages-container"></div>
+
         <div id="typing" class="typing-indicator"></div>
       </div>
 
       <footer class="chat-footer">
         <form id="msgForm" class="message-form">
+          <div class="file-input-wrapper">
+            <input type="file" id="file" class="file-input">
+            <label for="file" class="file-label" title="Attach File">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                  stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </label>
+          </div>
+
+          <div id="previewContainer" class="preview-container"></div>
+
           <input id="msg" type="text" placeholder="Type a message..." autocomplete="off" />
+
           <button type="submit" class="send-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke-linecap="round" stroke-linejoin="round" />

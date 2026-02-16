@@ -22,7 +22,11 @@ function scrollToBottom() {
 }
 
 function addMessage(data) {
-  if (!data.message || data.message.trim().length === 0) {
+  // function addMessage(data) { ... } logic
+  const msgText = data.message || "";
+  const fileUrl = data.fileUrl;
+
+  if ((!msgText || !msgText.trim().length) && !fileUrl) {
     return;
   }
 
@@ -35,26 +39,156 @@ function addMessage(data) {
 
   typing.innerText = "";
 
+  let contentHtml = "";
+  if (fileUrl) {
+    if (data.fileType && data.fileType.startsWith("image/")) {
+      contentHtml += `<img src="${fileUrl}" class="chat-image" alt="User Image" style="max-width: 200px; border-radius: 8px; margin-bottom: 5px;">`;
+    } else {
+      contentHtml += `<a href="${fileUrl}" target="_blank" class="file-link" style="color: inherit; text-decoration: underline;">📁 ${data.fileUrl}</a>`;
+    }
+  }
+  if (msgText) {
+    contentHtml += `<div class="message-text">${msgText}</div>`;
+  }
+
   messages.innerHTML += `
     <div class="${msgClass}">
       <div class="message-header">
         <span class="username">${data.username}</span>
         <span class="time">${time}</span>
       </div>
-      <div class="message-text">${data.message}</div>
+      ${contentHtml}
     </div>
   `;
 
   scrollToBottom();
 }
 
-msgForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  if (msg.value.trim()) {
-    socket.emit("chatMessage", msg.value);
-    msg.value = "";
-    scrollToBottom();
+
+// --- File Upload & Preview Logic ---
+const fileInput = document.getElementById("file");
+const previewContainer = document.getElementById("previewContainer");
+
+// Listen for file selection
+fileInput.addEventListener("change", function () {
+  const file = this.files[0];
+
+  // Clear previous preview
+  previewContainer.innerHTML = "";
+
+  if (!file) return;
+
+  // Create a small preview card
+  const previewCard = document.createElement("div");
+  previewCard.style.display = "flex";
+  previewCard.style.alignItems = "center";
+  previewCard.style.gap = "8px";
+
+  // Check file type for preview
+  if (file.type.startsWith("image/")) {
+    const img = document.createElement("img");
+    img.className = "preview-image";
+
+    // Read the file to show a thumbnail
+    const reader = new FileReader();
+    reader.onload = (e) => { img.src = e.target.result; };
+    reader.readAsDataURL(file);
+
+    previewCard.appendChild(img);
+  } else {
+    // Generic icon for non-image files
+    const icon = document.createElement("span");
+    icon.className = "preview-file-icon";
+    icon.innerHTML = "📄";
+    previewCard.appendChild(icon);
   }
+
+  // File Name
+  const fileName = document.createElement("span");
+  fileName.className = "preview-text";
+  fileName.textContent = file.name;
+  previewCard.appendChild(fileName);
+
+  // Remove Button (X)
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "remove-preview";
+  removeBtn.innerHTML = "✖";
+  removeBtn.title = "Remove file";
+  removeBtn.onclick = (e) => {
+    e.preventDefault(); // prevent form submit
+    clearFileSelection();
+  };
+  previewCard.appendChild(removeBtn);
+
+  previewContainer.appendChild(previewCard);
+
+  // Focus on message input so user can type immediately
+  msg.focus();
+});
+
+function clearFileSelection() {
+  fileInput.value = "";
+  previewContainer.innerHTML = "";
+}
+
+
+
+
+// --- Message Submission ---
+msgForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const file = fileInput.files[0];
+  const messageText = msg.value.trim();
+
+  // If no message and no file, do nothing
+  if (!messageText && !file) return;
+
+  let fileUrl = null;
+  let fileType = null;
+
+  // 1. Upload File if selected
+  if (file) {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        fileUrl = result.filePath;
+        fileType = result.fileType;
+      } else {
+        console.error("File upload failed");
+        alert("Failed to upload file. Please try again.");
+        return; // Stop if upload fails
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("Error uploading file.");
+      return;
+    }
+  }
+
+  // 2. Send Message via Socket
+  const payload = {
+    message: messageText,
+    fileUrl: fileUrl,
+    fileType: fileType
+  };
+
+  socket.emit("chatMessage", payload);
+
+  // 3. Clear Inputs
+  msg.value = "";
+  clearFileSelection();
+
+  // Focus back to input
+  msg.focus();
 });
 
 msg.addEventListener("input", () => {
