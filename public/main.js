@@ -354,12 +354,16 @@ async function startCall(constraints) {
 
 let isScreenSharing = false;
 let screenStream;
+let currentScreenSharer = null;
+let sharingScreenInProgress = false;
 
 async function toggleScreenShare() {
   if (!localStream) {
     alert("You must be in a call to share your screen.");
     return;
   }
+  if (sharingScreenInProgress) return;
+  sharingScreenInProgress = true;
 
   if (!isScreenSharing) {
     try {
@@ -389,15 +393,19 @@ async function toggleScreenShare() {
 
       screenShareBtn.classList.add("active");
       isScreenSharing = true;
+      socket.emit("screen-share-started");
+      updateScreenShareUI(socket.id, true);
 
     } catch (err) {
       console.error("Error sharing screen:", err);
+    } finally {
+      sharingScreenInProgress = false;
     }
   } else {
-    // when screen share stop get back camera access
+   
     try {
       const screenTrack = localStream.getVideoTracks()[0];
-      if (screenTrack) screenTrack.stop(); 
+      if (screenTrack) screenTrack.stop();
 
       const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       const cameraTrack = cameraStream.getVideoTracks()[0];
@@ -422,11 +430,40 @@ async function toggleScreenShare() {
       screenShareBtn.classList.remove("active");
       isScreenSharing = false;
       screenStream = null;
+      socket.emit("screen-share-stopped");
+      updateScreenShareUI(null, false);
 
     } catch (err) {
       console.error("Error reverting to camera:", err);
       alert("Failed to revert to camera.");
+    } finally {
+      sharingScreenInProgress = false;
     }
+  }
+}
+
+function updateScreenShareUI(sharingSocketId, isStarting) {
+ 
+  const allCards = document.querySelectorAll(".video-card");
+  allCards.forEach(card => card.classList.remove("sharing-card"));
+
+  if (isStarting && sharingSocketId) {
+    currentScreenSharer = sharingSocketId;
+    const videoId = (sharingSocketId === socket.id) ? "local" : `video-${sharingSocketId}`;
+    const videoElem = document.getElementById(videoId);
+
+    if (videoElem && videoElem.parentElement) {
+      
+      videoElem.parentElement.classList.add("sharing-card");
+      videoGrid.classList.add("screen-sharing-active");
+    } else {
+      
+      videoGrid.classList.remove("screen-sharing-active");
+    }
+  } else {
+   
+    currentScreenSharer = null;
+    videoGrid.classList.remove("screen-sharing-active");
   }
 }
 
@@ -497,6 +534,12 @@ function addVideoStream(stream, label, isLocal, socketId = null) {
   const video = card.querySelector("video");
   video.srcObject = stream;
   videoGrid.appendChild(card);
+
+  // If this new stream belongs to the current screen sharer, update UI
+  if (currentScreenSharer && (socketId === currentScreenSharer || (isLocal && currentScreenSharer === socket.id))) {
+    updateScreenShareUI(currentScreenSharer, true);
+  }
+
   return card;
 }
 
@@ -577,4 +620,12 @@ socket.on("answer", async ({ sender, sdp }) => {
 
 socket.on("ice-candidate", async ({ sender, candidate }) => {
   await peers[sender]?.addIceCandidate(new RTCIceCandidate(candidate));
+});
+
+socket.on("screen-share-started", (id) => {
+  updateScreenShareUI(id, true);
+});
+
+socket.on("screen-share-stopped", () => {
+  updateScreenShareUI(null, false);
 });

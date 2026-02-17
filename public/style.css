@@ -721,6 +721,53 @@ body {
   box-shadow: 0 0 8px var(--success);
 }
 
+/* Screen Sharing UI Updates */
+.video-grid.screen-sharing-active {
+  padding: 0;
+  gap: 0;
+  background: #000;
+  overflow: hidden !important;
+}
+
+.video-grid.screen-sharing-active .video-card:not(.sharing-card) {
+  display: none !important;
+}
+
+.video-grid.screen-sharing-active .sharing-card {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1 1 100% !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  aspect-ratio: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.video-grid.screen-sharing-active .sharing-card video {
+  object-fit: contain;
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1;
+}
+
+.video-grid.screen-sharing-active .sharing-card.local video {
+  transform: scaleX(1);
+  /* Don't mirror screen sharing */
+}
+
+/* Hide labels during screen share for cleaner view */
+.video-grid.screen-sharing-active .sharing-card .user-label {
+  opacity: 0.5;
+  bottom: 10px;
+  left: 10px;
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
 .call-controls {
   padding: 30px;
   background: linear-gradient(to top, rgba(2, 6, 23, 0.9), transparent);

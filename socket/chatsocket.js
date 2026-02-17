@@ -2,6 +2,7 @@
 const Msg = require("../models/msg");
 const users = {};
 const activeCalls = {}; // room -> Set(socket.id)
+const screenSharingUsers = {}; // room -> socketId
 
 module.exports = (io) => {
   io.on("connection", async (socket) => {
@@ -102,6 +103,11 @@ module.exports = (io) => {
       peersInCall.forEach(peerId => {
         io.to(peerId).emit("user-connected-to-call", socket.id);
       });
+
+      // If someone is already screen sharing in this room, notify the new joiner
+      if (screenSharingUsers[room]) {
+        socket.emit("screen-share-started", screenSharingUsers[room]);
+      }
     });
 
     socket.on("offer", (payload) => {
@@ -126,6 +132,11 @@ module.exports = (io) => {
           io.to(peerId).emit("user-left-call", socket.id);
         });
 
+        if (screenSharingUsers[user.room] === socket.id) {
+          delete screenSharingUsers[user.room];
+          socket.broadcast.to(user.room).emit("screen-share-stopped", socket.id);
+        }
+
         if (activeCalls[user.room].size === 0) {
           delete activeCalls[user.room];
           // Notify room call ended? Optional
@@ -134,6 +145,24 @@ module.exports = (io) => {
       }
     });
 
+    // --- Screen Sharing ---
+    socket.on("screen-share-started", () => {
+      const user = users[socket.id];
+      if (user) {
+        screenSharingUsers[user.room] = socket.id;
+        socket.broadcast.to(user.room).emit("screen-share-started", socket.id);
+      }
+    });
+
+    socket.on("screen-share-stopped", () => {
+      const user = users[socket.id];
+      if (user) {
+        if (screenSharingUsers[user.room] === socket.id) {
+          delete screenSharingUsers[user.room];
+        }
+        socket.broadcast.to(user.room).emit("screen-share-stopped", socket.id);
+      }
+    });
     // ------------------------
 
 
@@ -150,6 +179,11 @@ module.exports = (io) => {
           peersInCall.forEach(peerId => {
             io.to(peerId).emit("user-left-call", socket.id);
           });
+          if (screenSharingUsers[user.room] === socket.id) {
+            delete screenSharingUsers[user.room];
+            socket.broadcast.to(user.room).emit("screen-share-stopped", socket.id);
+          }
+
           if (activeCalls[user.room].size === 0) {
             delete activeCalls[user.room];
             io.to(user.room).emit("call-ended");
