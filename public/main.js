@@ -367,7 +367,7 @@ async function toggleScreenShare() {
 
   if (!isScreenSharing) {
     try {
-      screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
       const screenTrack = screenStream.getVideoTracks()[0];
 
       screenTrack.onended = () => {
@@ -407,7 +407,7 @@ async function toggleScreenShare() {
       const screenTrack = localStream.getVideoTracks()[0];
       if (screenTrack) screenTrack.stop();
 
-      const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       const cameraTrack = cameraStream.getVideoTracks()[0];
 
       if (localStream.getVideoTracks()[0]) {
