@@ -254,7 +254,7 @@ menuToggle?.addEventListener("click", () => {
   sidebar.classList.toggle("active");
 });
 
-// Close sidebar when clicking outside on mobile
+
 document.addEventListener("click", (e) => {
 
   // responsive sidebar
@@ -337,7 +337,7 @@ if (rejectCallBtn) {
 }
 
 
-// --- CORE FUNCTIONS ---
+// main functions for video calling
 
 async function startCall(constraints) {
   try {
@@ -366,12 +366,10 @@ async function toggleScreenShare() {
       screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
       const screenTrack = screenStream.getVideoTracks()[0];
 
-      // Handle user stopping screen share from browser UI
       screenTrack.onended = () => {
         if (isScreenSharing) toggleScreenShare();
       };
 
-      // Replace track for local view
       if (localStream.getVideoTracks()[0]) {
         localStream.removeTrack(localStream.getVideoTracks()[0]);
       }
@@ -382,7 +380,6 @@ async function toggleScreenShare() {
         localVideo.srcObject = localStream;
       }
 
-      // Replace track for all peers
       for (let id in peers) {
         const sender = peers[id].getSenders().find(s => s.track.kind === "video");
         if (sender) {
@@ -397,10 +394,10 @@ async function toggleScreenShare() {
       console.error("Error sharing screen:", err);
     }
   } else {
-    // Stop screen sharing and revert to camera
+    // when screen share stop get back camera access
     try {
       const screenTrack = localStream.getVideoTracks()[0];
-      if (screenTrack) screenTrack.stop(); // Stop the screen share stream
+      if (screenTrack) screenTrack.stop(); 
 
       const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
       const cameraTrack = cameraStream.getVideoTracks()[0];
@@ -415,7 +412,6 @@ async function toggleScreenShare() {
         localVideo.srcObject = localStream;
       }
 
-      // Replace track for all peers
       for (let id in peers) {
         const sender = peers[id].getSenders().find(s => s.track.kind === "video");
         if (sender) {
@@ -504,7 +500,7 @@ function addVideoStream(stream, label, isLocal, socketId = null) {
   return card;
 }
 
-// --- SIGNALING ---
+
 
 socket.on("ongoing-call", ({ participants }) => {
   const msg = `<div class="system-notification">Ongoing call in this room (${participants} participants). <button onclick="startCall({audio:true, video:true})" class="inline-link">Join Call</button></div>`;
