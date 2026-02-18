@@ -68,8 +68,8 @@ function addMessage(data) {
   ${contentHtml}
 
   <div class="reaction-container mt-2">
-    <button class="btn btn-sm reaction-btn">
-    <i class="fa-solid fa-face-smile"></i>
+    <button class="btn btn-sm reaction-btn ">
+    <i class="fa-solid fa-face-smile reaction-btn"></i>
     </button>
 
     <div class="reaction-box">
