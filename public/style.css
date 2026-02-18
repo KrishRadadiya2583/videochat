@@ -676,22 +676,30 @@ body {
 /* =========================
    VIDEO CALL CONTAINER
 ========================= */
+/* =========================
+   CALL CONTAINER (LEFT PANEL)
+========================= */
 .call-container {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 380px;
+  height: 100vh;
   background: radial-gradient(circle at center, #1e293b, #020617);
   z-index: 2000;
   display: flex;
   flex-direction: column;
-  animation: fadeIn 0.4s ease;
+  animation: slideIn 0.35s ease;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-@keyframes fadeIn {
+@keyframes slideIn {
   from {
-    opacity: 0;
+    transform: translateX(-100%);
+    opacity: 0.6;
   }
-
   to {
+    transform: translateX(0);
     opacity: 1;
   }
 }
@@ -700,45 +708,49 @@ body {
   display: none;
 }
 
+/* =========================
+   CHAT SHIFT WHEN CALL ACTIVE
+========================= */
+.chat-container {
+  transition: margin-left 0.35s ease;
+}
+
+.chat-container.call-active {
+  margin-left: 380px;
+}
+
+/* =========================
+   VIDEO GRID
+========================= */
 .video-grid {
   flex: 1;
   display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 40px;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
   overflow-y: auto;
 }
 
+/* =========================
+   VIDEO CARD
+========================= */
 .video-card {
   position: relative;
-  border-radius: 24px;
+  border-radius: 16px;
   overflow: hidden;
   background: #000;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
   border: 2px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  flex: 1 1 300px;
-  max-width: 640px;
-  aspect-ratio: 16/9;
-}
-
-/* Specific sizing classes for different participant counts */
-.video-grid:has(> :nth-child(1):last-child) .video-card {
-  max-width: 1000px;
-  flex: 0 1 90%;
-}
-
-.video-grid:has(> :nth-child(2):last-child) .video-card {
-  max-width: 500px;
-  flex: 0 1 45%;
+  transition: all 0.3s ease;
+  width: 100%;
+  aspect-ratio: 16/10;
 }
 
 .video-card:hover {
   transform: scale(1.02);
   border-color: var(--accent);
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
 }
 
 .video-card video {
@@ -747,42 +759,47 @@ body {
   object-fit: cover;
 }
 
-/* Mirror the local video so it feels natural for the user */
+/* Mirror local video */
 .video-card.local video {
   transform: scaleX(-1);
 }
 
-/* Ensure remote videos are NOT mirrored (show them as they are) */
+/* Remote video normal */
 .video-card.remote video {
   transform: scaleX(1);
 }
 
+/* =========================
+   USER LABEL
+========================= */
 .video-card .user-label {
   position: absolute;
-  bottom: 20px;
-  left: 20px;
+  bottom: 10px;
+  left: 10px;
   background: rgba(15, 23, 42, 0.7);
   backdrop-filter: blur(8px);
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 0.8rem;
   font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .video-card .user-label::before {
   content: "";
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   background: var(--success);
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--success);
+  box-shadow: 0 0 6px var(--success);
 }
 
-/* Screen Sharing UI Updates */
+/* =========================
+   SCREEN SHARING
+========================= */
 .video-grid.screen-sharing-active {
   padding: 0;
   gap: 0;
@@ -795,52 +812,39 @@ body {
 }
 
 .video-grid.screen-sharing-active .sharing-card {
-  max-width: 100% !important;
   width: 100% !important;
   height: 100% !important;
-  flex: 1 1 100% !important;
-  margin: 0 !important;
   border-radius: 0 !important;
   border: none !important;
   box-shadow: none !important;
   aspect-ratio: auto !important;
-  display: flex !important;
-  flex-direction: column !important;
 }
 
 .video-grid.screen-sharing-active .sharing-card video {
   object-fit: contain;
   width: 100% !important;
   height: 100% !important;
-  flex: 1;
 }
 
 .video-grid.screen-sharing-active .sharing-card.local video {
   transform: scaleX(1);
-  /* Don't mirror screen sharing */
 }
 
-/* Hide labels during screen share for cleaner view */
-.video-grid.screen-sharing-active .sharing-card .user-label {
-  opacity: 0.5;
-  bottom: 10px;
-  left: 10px;
-  font-size: 0.75rem;
-  pointer-events: none;
-}
-
+/* =========================
+   CALL CONTROLS
+========================= */
 .call-controls {
-  padding: 30px;
+  padding: 18px;
   background: linear-gradient(to top, rgba(2, 6, 23, 0.9), transparent);
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
 }
 
 .control-btn {
-  width: 60px;
-  height: 60px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(30, 41, 59, 0.8);
@@ -850,13 +854,13 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s ease;
 }
 
 .control-btn:hover {
   background: rgba(59, 130, 246, 0.2);
   border-color: var(--accent);
-  transform: translateY(-5px);
+  transform: translateY(-3px);
 }
 
 .control-btn.active {
@@ -866,18 +870,18 @@ body {
 
 .leave-btn {
   background: var(--danger);
-  width: 72px;
-  border-radius: 20px;
+  width: 64px;
+  border-radius: 18px;
 }
 
 .leave-btn:hover {
   background: #dc2626;
-  box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
 }
 
 .control-btn svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 /* =========================
@@ -900,7 +904,9 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Glass Card helper */
+/* =========================
+   GLASS CARD HELPER
+========================= */
 .glass-card {
   background: rgba(30, 41, 59, 0.7);
   backdrop-filter: blur(16px);

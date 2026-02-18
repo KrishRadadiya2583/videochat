@@ -71,12 +71,12 @@ function addMessage(data) {
     </button>
 
     <div class="reaction-box">
-      <span class="reaction" data-reaction="Like">👍</span>
-      <span class="reaction" data-reaction="Love">❤️</span>
-      <span class="reaction" data-reaction="Haha">😂</span>
-      <span class="reaction" data-reaction="Wow">😮</span>
-      <span class="reaction" data-reaction="Sad">😢</span>
-      <span class="reaction" data-reaction="Angry">😡</span>
+     <span class="reaction">👍</span>
+    <span class="reaction">❤️</span>
+    <span class="reaction">😂</span>
+    <span class="reaction">😮</span>
+    <span class="reaction">😢</span>
+    <span class="reaction">😡</span>
     </div>
   </div>
 
