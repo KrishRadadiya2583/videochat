@@ -17,6 +17,7 @@ const usersList = document.getElementById("users");
 
 const chatViewport = document.querySelector(".chat-viewport");
 
+
 function scrollToBottom() {
   chatViewport.scrollTop = chatViewport.scrollHeight;
 }
@@ -56,17 +57,68 @@ function addMessage(data) {
   }
 
   messages.innerHTML += `
-    <div class="${msgClass}">
-      <div class="message-header">
-        <span class="username">${data.username}</span>
-        <span class="time">${time}</span>
-      </div>
-      ${contentHtml}
+<div class="${msgClass}">
+  <div class="message-header">
+    <span class="username">${data.username}</span>
+    <span class="time">${time}</span>
+  </div>
+
+  ${contentHtml}
+
+  <div class="reaction-container mt-2">
+    <button class="btn btn-sm reaction-btn">
+    <i class="fa-solid fa-face-smile"></i>
+    </button>
+
+    <div class="reaction-box">
+      <span class="reaction" data-reaction="Like">👍</span>
+      <span class="reaction" data-reaction="Love">❤️</span>
+      <span class="reaction" data-reaction="Haha">😂</span>
+      <span class="reaction" data-reaction="Wow">😮</span>
+      <span class="reaction" data-reaction="Sad">😢</span>
+      <span class="reaction" data-reaction="Angry">😡</span>
     </div>
-  `;
+  </div>
+
+</div>
+`;
+
 
   scrollToBottom();
 }
+
+
+document.addEventListener("click", function (e) {
+
+  if (e.target.classList.contains("reaction-btn")) {
+    const container = e.target.closest(".reaction-container");
+    const box = container.querySelector(".reaction-box");
+
+
+    document.querySelectorAll(".reaction-box").forEach(b => {
+      if (b !== box) b.style.display = "none";
+    });
+
+    box.style.display = box.style.display === "block" ? "none" : "block";
+  }
+
+  if (e.target.classList.contains("reaction")) {
+    const reaction = e.target.textContent;
+    const container = e.target.closest(".reaction-container");
+    const button = container.querySelector(".reaction-btn");
+    const box = container.querySelector(".reaction-box");
+
+    button.innerHTML = reaction;
+    box.style.display = "none";
+  }
+
+  if (!e.target.closest(".reaction-container")) {
+    document.querySelectorAll(".reaction-box").forEach(b => {
+      b.style.display = "none";
+    });
+  }
+});
+
 
 
 // preview
@@ -125,6 +177,7 @@ fileInput.addEventListener("change", function () {
 
 
   msg.focus();
+  scrollToBottom();
 });
 
 function clearFileSelection() {
@@ -200,6 +253,7 @@ socket.on("loadMessages", function (msgs) {
 
 socket.on("message", (data) => {
   addMessage(data);
+  scrollToBottom();
 });
 
 socket.on("notification", (msg) => {
@@ -337,13 +391,12 @@ if (rejectCallBtn) {
 }
 
 
-// main functions for video calling
 
 async function startCall(constraints) {
   try {
     localStream = await navigator.mediaDevices.getUserMedia(constraints);
     callContainer.classList.remove("hidden");
-    addVideoStream(localStream, "You", true);
+    addVideoStream(localStream, username || "You", true);
     socket.emit("join-call");
     updateControlStates();
   } catch (err) {
@@ -402,7 +455,7 @@ async function toggleScreenShare() {
       sharingScreenInProgress = false;
     }
   } else {
-   
+
     try {
       const screenTrack = localStream.getVideoTracks()[0];
       if (screenTrack) screenTrack.stop();
@@ -443,7 +496,7 @@ async function toggleScreenShare() {
 }
 
 function updateScreenShareUI(sharingSocketId, isStarting) {
- 
+
   const allCards = document.querySelectorAll(".video-card");
   allCards.forEach(card => card.classList.remove("sharing-card"));
 
@@ -453,15 +506,15 @@ function updateScreenShareUI(sharingSocketId, isStarting) {
     const videoElem = document.getElementById(videoId);
 
     if (videoElem && videoElem.parentElement) {
-      
+
       videoElem.parentElement.classList.add("sharing-card");
       videoGrid.classList.add("screen-sharing-active");
     } else {
-      
+
       videoGrid.classList.remove("screen-sharing-active");
     }
   } else {
-   
+
     currentScreenSharer = null;
     videoGrid.classList.remove("screen-sharing-active");
   }
@@ -535,7 +588,6 @@ function addVideoStream(stream, label, isLocal, socketId = null) {
   video.srcObject = stream;
   videoGrid.appendChild(card);
 
-  // If this new stream belongs to the current screen sharer, update UI
   if (currentScreenSharer && (socketId === currentScreenSharer || (isLocal && currentScreenSharer === socket.id))) {
     updateScreenShareUI(currentScreenSharer, true);
   }
@@ -564,11 +616,11 @@ socket.on("incoming-call", ({ caller }) => {
 });
 
 socket.on("all-users-in-call", (users) => {
-  users.forEach(id => createPeerConnection(id, true));
+  users.forEach(u => createPeerConnection(u.socketId, true, u.username));
 });
 
-socket.on("user-connected-to-call", (id) => {
-  createPeerConnection(id, false);
+socket.on("user-connected-to-call", ({ socketId, username }) => {
+  createPeerConnection(socketId, false, username);
 });
 
 socket.on("user-left-call", (id) => {
@@ -579,7 +631,7 @@ socket.on("user-left-call", (id) => {
   document.getElementById(`video-${id}`)?.parentElement.remove();
 });
 
-function createPeerConnection(socketId, isInitiator) {
+function createPeerConnection(socketId, isInitiator, userName = "User") {
   if (peers[socketId]) return peers[socketId];
 
   const pc = new RTCPeerConnection(rtcConfig);
@@ -591,9 +643,8 @@ function createPeerConnection(socketId, isInitiator) {
     if (candidate) socket.emit("ice-candidate", { target: socketId, candidate });
   };
 
-  const name = peers[socketId]?.username || "User";
   pc.ontrack = ({ streams }) => {
-    addVideoStream(streams[0], name, false, socketId);
+    addVideoStream(streams[0], userName, false, socketId);
   };
 
   if (isInitiator) {

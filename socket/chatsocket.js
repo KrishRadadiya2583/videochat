@@ -1,8 +1,8 @@
 
 const Msg = require("../models/msg");
 const users = {};
-const activeCalls = {}; // room -> Set(socket.id)
-const screenSharingUsers = {}; // room -> socketId
+const activeCalls = {}; 
+const screenSharingUsers = {}; 
 
 module.exports = (io) => {
   io.on("connection", async (socket) => {
@@ -29,7 +29,6 @@ module.exports = (io) => {
 
       io.to(room).emit("userList", roomUsers);
 
-      // Send active call status to the joining user
       if (activeCalls[room] && activeCalls[room].size > 0) {
         socket.emit("ongoing-call", { participants: activeCalls[room].size });
       }
@@ -78,7 +77,6 @@ module.exports = (io) => {
 
     // --- WebRTC Signaling ---
 
-    // User initiates or joins a call
     socket.on("join-call", () => {
       const user = users[socket.id];
       if (!user) return;
@@ -88,23 +86,25 @@ module.exports = (io) => {
         activeCalls[room] = new Set();
       }
 
-      // Notify others in the room that a call is active/started if it was empty
+
       if (activeCalls[room].size === 0) {
         socket.broadcast.to(room).emit("incoming-call", { caller: user.username });
       }
 
-      // Return list of EXISTING users IN THE CALL to the new joiner
-      const peersInCall = Array.from(activeCalls[room]).filter(id => id !== socket.id);
+      const peersInCall = Array.from(activeCalls[room])
+        .filter(id => id !== socket.id)
+        .map(id => ({ socketId: id, username: users[id]?.username || "User" }));
+
       socket.emit("all-users-in-call", peersInCall);
 
       activeCalls[room].add(socket.id);
 
-      // Notify existing participants that a new user joined the call
-      peersInCall.forEach(peerId => {
-        io.to(peerId).emit("user-connected-to-call", socket.id);
+      Array.from(activeCalls[room]).forEach(peerId => {
+        if (peerId !== socket.id) {
+          io.to(peerId).emit("user-connected-to-call", { socketId: socket.id, username: user.username });
+        }
       });
 
-      // If someone is already screen sharing in this room, notify the new joiner
       if (screenSharingUsers[room]) {
         socket.emit("screen-share-started", screenSharingUsers[room]);
       }
@@ -126,7 +126,7 @@ module.exports = (io) => {
       const user = users[socket.id];
       if (user && activeCalls[user.room]) {
         activeCalls[user.room].delete(socket.id);
-        // Notify others in the call
+
         const peersInCall = Array.from(activeCalls[user.room]);
         peersInCall.forEach(peerId => {
           io.to(peerId).emit("user-left-call", socket.id);
@@ -139,13 +139,13 @@ module.exports = (io) => {
 
         if (activeCalls[user.room].size === 0) {
           delete activeCalls[user.room];
-          // Notify room call ended? Optional
+
           io.to(user.room).emit("call-ended");
         }
       }
     });
 
-    // --- Screen Sharing ---
+
     socket.on("screen-share-started", () => {
       const user = users[socket.id];
       if (user) {
@@ -163,7 +163,7 @@ module.exports = (io) => {
         socket.broadcast.to(user.room).emit("screen-share-stopped", socket.id);
       }
     });
-    // ------------------------
+    
 
 
 
@@ -172,7 +172,7 @@ module.exports = (io) => {
       if (user) {
         socket.broadcast.to(user.room).emit("notification", `${user.username} left the chat`);
 
-        // Handle Call Disconnect
+      
         if (activeCalls[user.room]) {
           activeCalls[user.room].delete(socket.id);
           const peersInCall = Array.from(activeCalls[user.room]);
