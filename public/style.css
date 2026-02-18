@@ -256,8 +256,8 @@ body {
 
 .reaction-container {
   position: absolute;
-  bottom: -10px;  
-  right: -10px;    
+  bottom: -10px;
+  right: -10px;
 }
 
 
@@ -270,7 +270,7 @@ body {
   border: 1px solid #ddd;
   padding: 6px 8px;
   border-radius: 20px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   white-space: nowrap;
 }
 
@@ -290,7 +290,8 @@ body {
   /* Make reaction button smaller on mobile */
   .reaction-container {
     bottom: -8px;
-    left: -8px;   /* or right: -8px; if using right side */
+    left: -8px;
+    /* or right: -8px; if using right side */
   }
 
   .reaction-btn {
@@ -682,10 +683,13 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  
-  width: 800px;          /* bigger rectangular width */
-  height: 600px;         /* rectangular height */
-  max-width: 90vw;       /* responsive for small screens */
+
+  width: 800px;
+  /* bigger rectangular width */
+  height: 600px;
+  /* rectangular height */
+  max-width: 90vw;
+  /* responsive for small screens */
   max-height: 90vh;
 
   background: radial-gradient(circle at center, #1e293b, #020617);
@@ -707,6 +711,7 @@ body {
     transform: translateX(-100%);
     opacity: 0.6;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
