@@ -676,22 +676,31 @@ body {
 /* =========================
    VIDEO CALL CONTAINER
 ========================= */
-/* =========================
-   CALL CONTAINER (LEFT PANEL)
-========================= */
+
 .call-container {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 380px;
-  height: 100vh;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  width: 800px;          /* bigger rectangular width */
+  height: 600px;         /* rectangular height */
+  max-width: 90vw;       /* responsive for small screens */
+  max-height: 90vh;
+
   background: radial-gradient(circle at center, #1e293b, #020617);
   z-index: 2000;
   display: flex;
   flex-direction: column;
-  animation: slideIn 0.35s ease;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  cursor: grab;
 }
+
+.call-container:active {
+  cursor: grabbing;
+}
+
+
 
 @keyframes slideIn {
   from {
@@ -724,12 +733,10 @@ body {
 ========================= */
 .video-grid {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   padding: 16px;
-  overflow-y: auto;
 }
 
 /* =========================

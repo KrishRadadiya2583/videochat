@@ -9,6 +9,8 @@ document.getElementById("roomName").innerText = roomDisplay;
 
 socket.emit("joinRoom", { username, room });
 
+
+// for insert message help with dom
 const msgForm = document.getElementById("msgForm");
 const msg = document.getElementById("msg");
 const messages = document.getElementById("messages");
@@ -23,7 +25,7 @@ function scrollToBottom() {
 }
 
 
-// message add function
+// a function use for add a message
 
 function addMessage(data) {
 
@@ -87,6 +89,33 @@ function addMessage(data) {
   scrollToBottom();
 }
 
+
+const box = document.querySelector('.call-container');
+
+let isDragging = false;
+let offsetX = 0;
+let offsetY = 0;
+
+box.addEventListener('mousedown', (e) => {
+  isDragging = true;
+
+  const rect = box.getBoundingClientRect();
+  offsetX = e.clientX - rect.left;
+  offsetY = e.clientY - rect.top;
+
+  box.style.transform = 'none'; 
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+
+  box.style.left = (e.clientX - offsetX) + 'px';
+  box.style.top = (e.clientY - offsetY) + 'px';
+});
+
+document.addEventListener('mouseup', () => {
+  isDragging = false;
+});
 
 document.addEventListener("click", function (e) {
 
