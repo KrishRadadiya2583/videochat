@@ -59,7 +59,7 @@ function addMessage(data) {
   }
 
   messages.innerHTML += `
-<div class="${msgClass}">
+<div class="${msgClass}" data-id="${data._id}">
   <div class="message-header">
     <span class="username">${data.username}</span>
     <span class="time">${time}</span>
@@ -103,7 +103,7 @@ box.addEventListener('mousedown', (e) => {
   offsetX = e.clientX - rect.left;
   offsetY = e.clientY - rect.top;
 
-  box.style.transform = 'none'; 
+  box.style.transform = 'none';
 });
 
 document.addEventListener('mousemove', (e) => {
@@ -133,11 +133,12 @@ document.addEventListener("click", function (e) {
 
   if (e.target.classList.contains("reaction")) {
     const reaction = e.target.textContent;
-    const container = e.target.closest(".reaction-container");
-    const button = container.querySelector(".reaction-btn");
-    const box = container.querySelector(".reaction-box");
+    const messageElement = e.target.closest(".message");
+    const messageId = messageElement.getAttribute("data-id");
 
-    button.innerHTML = reaction;
+    socket.emit("sendMessageReaction", { messageId, reaction });
+
+    const box = messageElement.querySelector(".reaction-box");
     box.style.display = "none";
   }
 
@@ -283,6 +284,16 @@ socket.on("loadMessages", function (msgs) {
 socket.on("message", (data) => {
   addMessage(data);
   scrollToBottom();
+});
+
+socket.on("messageReaction", ({ messageId, reaction }) => {
+  const messageElement = document.querySelector(`.message[data-id="${messageId}"]`);
+  if (messageElement) {
+    const button = messageElement.querySelector(".reaction-btn");
+    if (button) {
+      button.innerHTML = reaction;
+    }
+  }
 });
 
 socket.on("notification", (msg) => {

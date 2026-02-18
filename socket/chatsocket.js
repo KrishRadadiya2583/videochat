@@ -1,8 +1,8 @@
 
 const Msg = require("../models/msg");
 const users = {};
-const activeCalls = {}; 
-const screenSharingUsers = {}; 
+const activeCalls = {};
+const screenSharingUsers = {};
 
 module.exports = (io) => {
   io.on("connection", async (socket) => {
@@ -59,13 +59,17 @@ module.exports = (io) => {
         timestamp: timestamp
       };
 
-      io.to(user.room).emit("message", msgPayload);
-
       const message = new Msg(msgPayload);
-
       await message.save();
       console.log("Message saved to database");
 
+      io.to(user.room).emit("message", message);
+    });
+
+    socket.on("sendMessageReaction", ({ messageId, reaction }) => {
+      const user = users[socket.id];
+      if (!user) return;
+      io.to(user.room).emit("messageReaction", { messageId, reaction });
     });
 
     socket.on("typing", () => {
@@ -163,7 +167,7 @@ module.exports = (io) => {
         socket.broadcast.to(user.room).emit("screen-share-stopped", socket.id);
       }
     });
-    
+
 
 
 
@@ -172,7 +176,7 @@ module.exports = (io) => {
       if (user) {
         socket.broadcast.to(user.room).emit("notification", `${user.username} left the chat`);
 
-      
+
         if (activeCalls[user.room]) {
           activeCalls[user.room].delete(socket.id);
           const peersInCall = Array.from(activeCalls[user.room]);
