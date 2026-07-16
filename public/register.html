@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create account · Connect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/auth.css" />
+</head>
+<body>
+  <div class="bg-blob blob-a"></div>
+  <div class="bg-blob blob-b"></div>
+
+  <main class="auth-shell">
+    <section class="auth-card">
+      <header class="auth-header">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 13.4876 3.36093 14.891 4 16.1272L3 21L7.8728 20C9.10898 20.6391 10.5124 21 12 21Z"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <h1>Connect</h1>
+        </div>
+        <p class="tagline">Create your account.</p>
+      </header>
+
+      <form id="registerForm" class="auth-form" autocomplete="on">
+        <label class="field">
+          <span>Display name</span>
+          <input type="text" name="displayName" required maxlength="40" autocomplete="name" />
+        </label>
+
+        <label class="field">
+          <span>Username</span>
+          <input type="text" name="username" required minlength="3" maxlength="24" pattern="[a-zA-Z0-9_.\-]+" autocomplete="username" />
+        </label>
+
+        <label class="field">
+          <span>Email</span>
+          <input type="email" name="email" required autocomplete="email" />
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input type="password" name="password" required minlength="6" autocomplete="new-password" />
+        </label>
+
+        <div id="registerError" class="form-error" hidden></div>
+
+        <button type="submit" class="btn-primary">
+          <span>Create account</span>
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+      </form>
+
+      <p class="auth-swap">
+        Already have an account? <a href="/login">Sign in</a>
+      </p>
+    </section>
+  </main>
+
+  <script src="/js/auth.js"></script>
+</body>
+</html>

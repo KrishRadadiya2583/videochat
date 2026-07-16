@@ -1,91 +1,150 @@
-# Videochat Tack
+# Connect — Real-time Chat Platform
 
-## Overview
-
-Videochat Tack is a browser-based real-time video chat application that
-allows users to join themed rooms and communicate using audio and video
-directly from their browser.
-
-Live App: https://videochat-tack.onrender.com
-
-------------------------------------------------------------------------
+A professional, real-time chat platform with direct messages, group chats, rich
+messaging, file sharing, video/audio calls and screen sharing — all in the
+browser.
 
 ## Features
 
--   Join video chat rooms instantly
--   Enter a display name before joining
--   Multiple predefined rooms:
-    -   General Discussion
-    -   Tech & Development
-    -   Gaming Zone
-    -   Business & Networking
--   Real-time video and audio communication
--   Browser-based (no installation required)
+**Accounts & Presence**
+- Email / username signup, login, JWT-based sessions
+- Display name, avatar URL, bio, online / away / offline presence
+- Search users to start conversations
 
-------------------------------------------------------------------------
+**Conversations**
+- 1-on-1 direct messages
+- Group chats with admins, add / remove members
+- Auto-sorted conversation list with last-message preview
 
-## How It Works
+**Messaging**
+- Real-time delivery via Socket.IO
+- Reply / thread to any message
+- Emoji reactions (togglable, aggregated)
+- Edit and delete your messages
+- Read receipts
+- Typing indicators
+- File / image / video attachments (Cloudinary)
+- URL auto-linking
+- Infinite scroll history
 
-1.  Open the application in your browser.
-2.  Enter your display name.
-3.  Select a room from the dropdown.
-4.  Click **Join Chat**.
-5.  Grant camera and microphone permissions.
-6.  Start communicating with other participants.
+**Calls**
+- WebRTC audio and video calls per conversation
+- Multi-party calls (mesh)
+- Screen sharing
+- Incoming-call ring, accept / decline
 
-------------------------------------------------------------------------
+**UI**
+- Modern dark theme (glassmorphism, gradients)
+- Responsive: works on desktop, tablet and mobile
+- Sidebar collapses on small screens
 
-## Technology Stack (Typical Setup)
+## Tech Stack
 
-This type of application is commonly built using:
+- **Node.js + Express 5** — HTTP API
+- **Socket.IO** — realtime messaging & WebRTC signaling
+- **MongoDB + Mongoose** — persistence
+- **JWT + bcryptjs** — auth
+- **Multer + Cloudinary** — uploads
+- **Vanilla JS + CSS** — no build step required
 
--   **WebRTC** -- Real-time video/audio communication
--   **JavaScript (Client-side)** -- UI and media handling
--   **Node.js** -- Backend signaling server
--   **WebSockets / Socket.IO** -- Real-time signaling
--   **STUN/TURN servers** -- NAT traversal for peer connections
+## Setup
 
-------------------------------------------------------------------------
+### 1. Install
 
-## Requirements
-
--   Modern browser (Chrome, Edge, Firefox, Safari)
--   Camera and microphone
--   Stable internet connection
--   HTTPS environment (required for WebRTC)
-
-------------------------------------------------------------------------
-
-## Local Setup (Developer Guide)
-
-### Prerequisites
-
--   Node.js installed
--   npm or yarn
-
-### Installation
-
-``` bash
+```bash
 npm install
 ```
 
-### Start the server
+### 2. Configure `.env`
 
-``` bash
-nodemon app.js
+Copy `.env.example` to `.env` and fill in:
+
+```
+PORT=3000
+MONGO_URI=mongodb+srv://<user>:<pw>@<cluster>/<db>
+JWT_SECRET=some-long-random-string
+JWT_EXPIRES_IN=7d
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+CLOUDINARY_CLOUD_NAME=...
 ```
 
-Then open your browser and navigate to:
+> **Important:** the previous MongoDB password (`mils@2109`) leaked to git
+> history. Rotate it in Atlas before shipping.
 
-    https://localhost:3000
+### 3. Run
 
-------------------------------------------------------------------------
+```bash
+npm run dev    # nodemon, auto-reload
+# or
+npm start
+```
 
+Then open `http://localhost:3000` — you'll land on the login page. Create an
+account, then invite a second user by searching for them to start a chat.
 
-## Troubleshooting
+## Structure
 
-**Camera or microphone not working** - Check browser permissions. -
-Ensure HTTPS is enabled.
+```
+app.js                     Entry / Express bootstrap
+config/
+  db.js                    Mongo connection
+  cloudinary.js            Cloudinary client
+middleware/
+  auth.js                  HTTP JWT auth
+  socketAuth.js            Socket.IO JWT auth
+models/
+  User.js
+  Conversation.js
+  Message.js
+multer/multer.js           Cloudinary upload storage
+routes/
+  auth.js                  /api/auth
+  users.js                 /api/users
+  conversations.js         /api/conversations
+  upload.js                /api/upload
+socket/index.js            All Socket.IO handlers (msg + WebRTC)
+public/
+  login.html, register.html, app.html
+  css/                     auth.css, app.css
+  js/                      auth.js, api.js, app.js, call.js
+```
 
-------------------------------------------------------------------------
+## Endpoints
 
+All API endpoints require `Authorization: Bearer <token>` except register/login.
+
+- `POST   /api/auth/register`  — create account
+- `POST   /api/auth/login`     — get JWT
+- `GET    /api/auth/me`        — current user
+- `PATCH  /api/auth/me`        — update profile
+- `GET    /api/users/search?q=` — search users
+- `GET    /api/conversations`  — list your conversations
+- `POST   /api/conversations/dm`     — start / find DM
+- `POST   /api/conversations/group`  — create group
+- `GET    /api/conversations/:id/messages` — paged history
+- `POST   /api/conversations/:id/members` — add (admin)
+- `DELETE /api/conversations/:id/members/:userId` — remove / leave
+- `POST   /api/upload`         — file upload → Cloudinary
+
+## Socket events (client ⇄ server)
+
+**Messaging:** `message:send`, `message:new`, `message:edit`, `message:updated`,
+`message:delete`, `message:deleted`, `message:react`, `message:reaction`,
+`message:read`
+
+**Presence & typing:** `presence`, `typing:start`, `typing:stop`,
+`conversation:join`
+
+**Calls (WebRTC):** `call:join`, `call:leave`, `call:incoming`, `call:active`,
+`call:ended`, `call:peer-joined`, `call:peer-left`, `call:signal`,
+`call:screen-share-started`, `call:screen-share-stopped`
+
+## Notes
+
+- STUN only (Google's public server). For production behind strict NATs, add
+  a TURN server.
+- Calls use a full mesh — fine up to ~6 participants. For larger rooms, add
+  an SFU (mediasoup / LiveKit).
+- Message search, notifications, e2e encryption and mobile apps are not
+  included but the API surface is ready to add them.

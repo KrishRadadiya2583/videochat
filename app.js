@@ -1,41 +1,67 @@
+require("dotenv").config();
+
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
 const path = require("path");
-const chatSocket = require("./socket/chatsocket");
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
+const { Server } = require("socket.io");
+
+const connectDB = require("./config/db");
+const chatSocket = require("./socket");
+
+const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/users");
+const conversationRoutes = require("./routes/conversations");
+const uploadRoutes = require("./routes/upload");
+
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
-const mongoose = require("mongoose");
-const upload = require("./multer/multer");
+const io = new Server(server, {
+  cors: { origin: true, credentials: true },
+  maxHttpBufferSize: 5e6,
+});
 
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json({ limit: "1mb" }));
+app.use(cookieParser());
 
-function main() {
-    return mongoose.connect("mongodb+srv://krishradadiya19_db_user:mils%402109@cluster0.xbvmrom.mongodb.net/chatroom");
-}
+// API
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/conversations", conversationRoutes);
+app.use("/api/upload", uploadRoutes);
 
-main().then(() => {
-    console.log("Connected to MongoDB");
-}).catch((err) => {
-    console.log(err);
-})
-
-
+// Static
 app.use(express.static(path.join(__dirname, "public")));
 
-app.post("/upload", upload.single("file"), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-    }
-    res.json({
-        filePath: req.file.path,
-        fileType: req.file.mimetype
-    });
+// SPA fallback for known client routes so refresh works
+app.get(/^\/(login|register|app)$/, (req, res) => {
+  const page = req.path.replace(/^\//, "");
+  res.sendFile(path.join(__dirname, "public", `${page}.html`));
+});
+
+// Root
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+// Errors
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: "Server error" });
 });
 
 chatSocket(io);
 
-
-server.listen(3000, () => {
-    console.log("Server running on port", 3000);
-});
+const PORT = process.env.PORT || 3000;
+connectDB()
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`Connect chat platform listening on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to start", err);
+    process.exit(1);
+  });
