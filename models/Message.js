@@ -37,6 +37,15 @@ const messageSchema = new mongoose.Schema(
     editedAt: { type: Date, default: null },
     deletedAt: { type: Date, default: null },
     system: { type: Boolean, default: false },
+    callInfo: {
+      type: {
+        callType: { type: String, enum: ["audio", "video"] },
+        missed: { type: Boolean, default: false },
+        durationSeconds: { type: Number, default: 0 },
+        initiator: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      },
+      default: null,
+    },
   },
   { timestamps: true }
 );

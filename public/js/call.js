@@ -44,7 +44,8 @@
     el.incomingCallModal.classList.add("hidden");
     if (pendingCall) {
       state.conversationId = pendingCall.conversationId;
-      startCall({ audio: true, video: true }, true);
+      const wantVideo = pendingCall.callType !== "audio";
+      startCall({ audio: true, video: wantVideo }, true);
       pendingCall = null;
     }
   });
@@ -72,7 +73,8 @@
     el.callSurface.classList.remove("hidden");
     addTile("local", state.localStream, "You", true);
 
-    socket().emit("call:join", { conversationId: convId }, (res) => {
+    const callType = constraints && constraints.video ? "video" : "audio";
+    socket().emit("call:join", { conversationId: convId, callType }, (res) => {
       if (res && res.error) {
         window.ChatApp.toast(res.error, "error");
         endCall();
@@ -297,10 +299,11 @@
       removePeer(socketId);
     });
 
-    s.on("call:incoming", ({ conversationId, caller }) => {
+    s.on("call:incoming", ({ conversationId, caller, callType }) => {
       if (state.conversationId) return; // Already in a call
-      pendingCall = { conversationId };
-      el.callerLabel.textContent = `${caller.username} is calling...`;
+      pendingCall = { conversationId, callType: callType || "video" };
+      const kind = callType === "audio" ? "voice call" : "video call";
+      el.callerLabel.textContent = `${caller.username} — incoming ${kind}…`;
       el.incomingCallModal.classList.remove("hidden");
     });
 

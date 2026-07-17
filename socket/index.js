@@ -5,8 +5,11 @@ const socketAuth = require("../middleware/socketAuth");
 
 // user id -> Set<socket.id>
 const userSockets = new Map();
-// conversation id -> Set<socket.id> of active call participants
+// conversation id -> Map<socket.id, {userId, username}> of active call participants
 const activeCalls = new Map();
+// conversation id -> per-call metadata (reset every time a new call starts)
+// { startedAt, callType, initiatorId, initiatorName, distinctUsers: Set<userId> }
+const callMeta = new Map();
 // conversation id -> socket.id currently screen-sharing
 const screenSharers = new Map();
 
@@ -219,7 +222,7 @@ module.exports = (io) => {
 
     // ---- WebRTC signaling ----
 
-    socket.on("call:join", async ({ conversationId }, ack) => {
+    socket.on("call:join", async ({ conversationId, callType }, ack) => {
       if (!(await isMember(conversationId, userId)))
         return ack?.({ error: "Not a member" });
 
@@ -238,6 +241,20 @@ module.exports = (io) => {
       call.set(socket.id, { userId, username });
       socket.join(`call:${conversationId}`);
 
+      // Initialize or update per-call meta for this conversation
+      if (wasEmpty) {
+        callMeta.set(conversationId, {
+          startedAt: new Date(),
+          callType: callType === "audio" ? "audio" : "video",
+          initiatorId: userId,
+          initiatorName: username,
+          distinctUsers: new Set([userId]),
+        });
+      } else {
+        const meta = callMeta.get(conversationId);
+        if (meta) meta.distinctUsers.add(userId);
+      }
+
       // Tell everyone else that a user joined the call
       socket.to(`call:${conversationId}`).emit("call:peer-joined", {
         socketId: socket.id,
@@ -250,6 +267,7 @@ module.exports = (io) => {
         socket.to(`conv:${conversationId}`).emit("call:incoming", {
           conversationId,
           caller: { userId, username },
+          callType: callType === "audio" ? "audio" : "video",
         });
       }
 
@@ -354,10 +372,59 @@ function leaveCall(io, socket, conversationId) {
   if (call.size === 0) {
     activeCalls.delete(conversationId);
     io.to(`conv:${conversationId}`).emit("call:ended", { conversationId });
+    // Persist a system message summarizing the call
+    const meta = callMeta.get(conversationId);
+    callMeta.delete(conversationId);
+    if (meta) saveCallSystemMessage(io, conversationId, meta).catch(console.error);
   } else {
     io.to(`conv:${conversationId}`).emit("call:active", {
       conversationId,
       participants: call.size,
     });
   }
+}
+
+async function saveCallSystemMessage(io, conversationId, meta) {
+  const durationSeconds = Math.max(
+    0,
+    Math.floor((Date.now() - meta.startedAt.getTime()) / 1000)
+  );
+  // "Missed" if only the initiator was ever in the call
+  const missed = meta.distinctUsers.size <= 1;
+
+  let text;
+  if (missed) {
+    text = meta.callType === "video" ? "Missed video call" : "Missed voice call";
+  } else {
+    const mm = Math.floor(durationSeconds / 60);
+    const ss = String(durationSeconds % 60).padStart(2, "0");
+    const dur = `${mm}:${ss}`;
+    text = meta.callType === "video" ? `Video call · ${dur}` : `Voice call · ${dur}`;
+  }
+
+  const msg = await Message.create({
+    conversation: conversationId,
+    sender: meta.initiatorId,
+    text,
+    system: true,
+    callInfo: {
+      callType: meta.callType,
+      missed,
+      durationSeconds,
+      initiator: meta.initiatorId,
+    },
+    readBy: [meta.initiatorId],
+  });
+
+  await Conversation.findByIdAndUpdate(conversationId, {
+    lastMessage: msg._id,
+    lastMessageAt: msg.createdAt,
+  });
+
+  const populated = await Message.findById(msg._id).populate(
+    "sender",
+    "username displayName avatarUrl"
+  );
+
+  io.to(`conv:${conversationId}`).emit("message:new", populated);
 }

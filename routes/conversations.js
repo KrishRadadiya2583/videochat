@@ -47,6 +47,8 @@ function serializeConversation(conv, currentUserId) {
           text: conv.lastMessage.text,
           fileUrl: conv.lastMessage.fileUrl,
           fileType: conv.lastMessage.fileType,
+          system: conv.lastMessage.system,
+          callInfo: conv.lastMessage.callInfo,
           sender: conv.lastMessage.sender && {
             id: conv.lastMessage.sender._id,
             displayName: conv.lastMessage.sender.displayName,

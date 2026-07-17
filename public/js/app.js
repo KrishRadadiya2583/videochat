@@ -177,13 +177,17 @@
       .map((c) => {
         const lm = c.lastMessage;
         const preview = lm
-          ? (lm.text
+          ? (lm.callInfo
+              ? (lm.callInfo.missed
+                  ? `📵 ${lm.callInfo.callType === "video" ? "Missed video call" : "Missed voice call"}`
+                  : `${lm.callInfo.callType === "video" ? "📹" : "📞"} ${lm.callInfo.callType === "video" ? "Video call" : "Voice call"}`)
+              : lm.text
               ? esc(lm.text)
               : lm.fileUrl
               ? "📎 Attachment"
               : "")
           : "No messages yet";
-        const sender = lm && lm.sender && lm.sender.id === state.me.id ? "You: " : "";
+        const sender = lm && !lm.callInfo && lm.sender && lm.sender.id === state.me.id ? "You: " : "";
         return `
           <div class="conv-item ${c.id === state.activeId ? "active" : ""}" data-id="${c.id}">
             ${convAvatarHTML(c, "md").replace("avatar sm", "avatar")}
@@ -275,7 +279,7 @@
         prevSender = null;
       }
       if (m.system) {
-        parts.push(`<div class="system-msg">${esc(m.text)}</div>`);
+        parts.push(renderSystemMsg(m));
         prevSender = null;
         return;
       }
@@ -367,6 +371,41 @@
     `;
   }
 
+  function renderSystemMsg(m) {
+    const ci = m.callInfo;
+    if (!ci) {
+      return `<div class="system-msg">${esc(m.text)}</div>`;
+    }
+    const missed = !!ci.missed;
+    const isVideo = ci.callType === "video";
+    const iconSvg = isVideo
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const senderName = m.sender ? (m.sender.displayName || m.sender.username) : "";
+    const label = missed
+      ? `Missed ${isVideo ? "video" : "voice"} call`
+      : `${isVideo ? "Video" : "Voice"} call`;
+    const detail = missed
+      ? `from ${esc(senderName)} · ${timeShort(m.createdAt)}`
+      : `${formatDuration(ci.durationSeconds)} · ${timeShort(m.createdAt)}`;
+    return `
+      <div class="call-msg ${missed ? "missed" : "done"}">
+        <span class="call-icon">${iconSvg}</span>
+        <span>
+          <div>${esc(label)}</div>
+          <div class="call-detail">${detail}</div>
+        </span>
+      </div>
+    `;
+  }
+
+  function formatDuration(s) {
+    s = Math.max(0, Math.floor(s || 0));
+    const mm = Math.floor(s / 60);
+    const ss = String(s % 60).padStart(2, "0");
+    return `${mm}:${ss}`;
+  }
+
   function linkify(html) {
     return html.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noreferrer">$1</a>');
   }
@@ -451,7 +490,7 @@
     if (!e.target.closest(".reaction-picker") && !e.target.closest('[data-act="react"]')) {
       el.reactionPicker.classList.add("hidden");
     }
-    if (!e.target.closest(".emoji-picker") && e.target !== el.emojiBtn) {
+    if (!e.target.closest(".emoji-picker") && !e.target.closest("#emojiBtn")) {
       el.emojiPicker.classList.add("hidden");
     }
   });
@@ -530,20 +569,94 @@
     socket.emit("typing:stop", { conversationId: state.activeId });
   }
 
-  // ---- Emoji ----
-  el.emojiBtn.addEventListener("click", () => {
+  // ---- Emoji picker ----
+  const EMOJI_CATEGORIES = [
+    { icon: "😀", name: "Smileys", items: "😀 😃 😄 😁 😆 😅 🤣 😂 🙂 🙃 😉 😊 😇 🥰 😍 🤩 😘 😗 ☺️ 😚 😙 🥲 😋 😛 😜 🤪 😝 🤑 🤗 🤭 🤫 🤔 🤐 🤨 😐 😑 😶 😏 😒 🙄 😬 🤥 😌 😔 😪 🤤 😴 😷 🤒 🤕 🤢 🤮 🤧 🥵 🥶 🥴 😵 🤯 🤠 🥳 🥸 😎 🤓 🧐 😕 😟 🙁 ☹️ 😮 😯 😲 😳 🥺 😦 😧 😨 😰 😥 😢 😭 😱 😖 😣 😞 😓 😩 😫 🥱 😤 😡 😠 🤬 😈 👿 💀 ☠️ 💩 🤡 👹 👺 👻 👽 👾 🤖".split(" ") },
+    { icon: "❤️", name: "Hearts", items: "❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💔 ❣️ 💕 💞 💓 💗 💖 💘 💝 💟 ♥️ 💌 💋 👄 🫶 🩷 🩵 🩶".split(" ") },
+    { icon: "👋", name: "Hands", items: "👋 🤚 🖐️ ✋ 🖖 👌 🤌 🤏 ✌️ 🤞 🫰 🤟 🤘 🤙 👈 👉 👆 🖕 👇 ☝️ 👍 👎 ✊ 👊 🤛 🤜 👏 🙌 👐 🤲 🤝 🙏 💪 🦵 🦶 👂 🦻 👃 🧠 🦷 🦴 👀 👁️ 👅 👶 👦 👧 🧒 👨 👩 🧑 👴 👵 🧓".split(" ") },
+    { icon: "🐶", name: "Animals", items: "🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐽 🐸 🐵 🙈 🙉 🙊 🐒 🐔 🐧 🐦 🐤 🦆 🦅 🦉 🦇 🐺 🐗 🐴 🦄 🐝 🐛 🦋 🐌 🐞 🐢 🐍 🦎 🐙 🦑 🦐 🦞 🦀 🐡 🐠 🐟 🐬 🐳 🐋 🦈 🐊 🐅 🐆 🦓 🦍 🦧 🦣 🐘 🦛 🦏 🐪 🐫 🦒 🦘 🦬 🐃 🐂 🐄 🐎 🐖 🐏 🐑 🦙 🐐 🦌 🐕 🐩 🦮 🐈 🐓 🦃 🕊️".split(" ") },
+    { icon: "🍕", name: "Food", items: "🍏 🍎 🍐 🍊 🍋 🍌 🍉 🍇 🍓 🫐 🍈 🍒 🍑 🥭 🍍 🥥 🥝 🍅 🍆 🥑 🥦 🥬 🥒 🌶️ 🫑 🌽 🥕 🫒 🧄 🧅 🥔 🍠 🥐 🥯 🍞 🥖 🥨 🧀 🥚 🍳 🧈 🥞 🧇 🥓 🥩 🍗 🍖 🌭 🍔 🍟 🍕 🥪 🥙 🧆 🌮 🌯 🫔 🥗 🥘 🫕 🥫 🍝 🍜 🍲 🍛 🍣 🍱 🥟 🦪 🍤 🍙 🍚 🍘 🍥 🥠 🍢 🍡 🍧 🍨 🍦 🥧 🧁 🍰 🎂 🍮 🍭 🍬 🍫 🍿 🍩 🍪 🌰 🥜 🍯 ☕ 🍵 🧃 🥤 🧋 🍶 🍺 🍻 🥂 🍷 🥃 🍸 🍹 🧉 🍾".split(" ") },
+    { icon: "⚽", name: "Activities", items: "⚽ 🏀 🏈 ⚾ 🥎 🎾 🏐 🏉 🥏 🎱 🪀 🏓 🏸 🏒 🏑 🥍 🏏 🪃 🥅 ⛳ 🪁 🏹 🎣 🤿 🥊 🥋 🎽 🛹 🛼 🛷 ⛸️ 🥌 🎿 ⛷️ 🏂 🪂 🏋️ 🤼 🤸 ⛹️ 🤺 🤾 🏌️ 🏇 🧘 🏄 🏊 🤽 🚣 🧗 🚵 🚴 🏆 🥇 🥈 🥉 🏅 🎖️ 🏵️ 🎗️ 🎫 🎟️ 🎪 🤹 🎭 🩰 🎨 🎬 🎤 🎧 🎼 🎹 🥁 🪘 🎷 🎺 🪗 🎸 🪕 🎻 🎲 ♟️ 🎯 🎳 🎮 🎰 🧩".split(" ") },
+    { icon: "🚗", name: "Travel", items: "🚗 🚕 🚙 🚌 🚎 🏎️ 🚓 🚑 🚒 🚐 🛻 🚚 🚛 🚜 🦯 🦽 🦼 🛴 🚲 🛵 🏍️ 🛺 🚨 🚔 🚍 🚘 🚖 🚡 🚠 🚟 🚃 🚋 🚞 🚝 🚄 🚅 🚈 🚂 🚆 🚇 🚊 🚉 ✈️ 🛫 🛬 🛩️ 💺 🛰️ 🚀 🛸 🚁 🛶 ⛵ 🚤 🛥️ 🛳️ ⛴️ 🚢 ⚓ ⛽ 🚧 🚦 🚥 🚏 🗺️ 🗿 🗽 🗼 🏰 🏯 🏟️ 🎡 🎢 🎠 ⛲ ⛱️ 🏖️ 🏝️ 🏜️ 🌋 ⛰️ 🏔️ 🗻 🏕️ ⛺ 🏠 🏡 🏘️ 🏚️ 🏗️ 🏭 🏢 🏬 🏣 🏤 🏥 🏦 🏨 🏪 🏫 🏩 💒 🏛️ ⛪ 🕌 🕍 🛕 🕋 ⛩️".split(" ") },
+    { icon: "💡", name: "Objects", items: "⌚ 📱 📲 💻 ⌨️ 🖥️ 🖨️ 🖱️ 🖲️ 🕹️ 🗜️ 💽 💾 💿 📀 📼 📷 📸 📹 🎥 📽️ 🎞️ 📞 ☎️ 📟 📠 📺 📻 🎙️ 🎚️ 🎛️ 🧭 ⏱️ ⏲️ ⏰ 🕰️ ⌛ ⏳ 📡 🔋 🔌 💡 🔦 🕯️ 🪔 🧯 🛢️ 💸 💵 💴 💶 💷 🪙 💰 💳 💎 ⚖️ 🪜 🧰 🪛 🔧 🔨 ⚒️ 🛠️ ⛏️ 🪚 🔩 ⚙️ 🪤 🧱 ⛓️ 🧲 🔫 💣 🧨 🪓 🔪 🗡️ ⚔️ 🛡️ 🚬 ⚰️ 🪦 ⚱️ 🏺 🔮 📿 🧿 💈 ⚗️ 🔭 🔬 🕳️ 🩹 🩺 💊 💉 🩸 🧬 🦠 🧫 🧪 🌡️ 🧹 🪠 🧺 🧻 🚽 🚰 🚿 🛁 🛀 🧼 🪥 🪒 🧽 🪣 🧴 🛎️ 🔑 🗝️ 🚪 🪑 🛋️ 🛏️ 🛌 🧸 🪆 🖼️ 🪞 🪟 🛍️ 🛒 🎁 🎀 🎊 🎉 🎏 🎐 🎑 🧧 ✉️ 📩 📨 📧 💌 📥 📤 📦 🏷️ 📪 📫 📬 📭 📮 📯 📜 📃 📄 📑 🧾 📊 📈 📉 🗒️ 🗓️ 📆 📅 🗑️ 📇 🗃️ 🗳️ 🗄️ 📋 📁 📂 🗂️ 🗞️ 📰 📓 📔 📒 📕 📗 📘 📙 📚 📖 🔖 🧷 🔗 📎 🖇️ 📐 📏 🧮 📌 📍 ✂️ 🖊️ 🖋️ ✒️ 🖌️ 🖍️ 📝 ✏️ 🔍 🔎 🔏 🔐 🔒 🔓".split(" ") },
+    { icon: "🎉", name: "Symbols", items: "❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💯 💢 💥 💫 💦 💨 🕳️ 💣 💬 👁️‍🗨️ 🗨️ 🗯️ 💭 💤 🌟 ⭐ 🌠 ☀️ 🌤️ ⛅ 🌥️ ☁️ 🌦️ 🌧️ ⛈️ 🌩️ 🌨️ ❄️ ☃️ ⛄ 🌬️ 💧 💦 ☔ ☂️ 🌊 🌫️ 🔥 ✨ 🎉 🎊 🎈 🎁 🎗️ 🎟️ 🎫 🎖️ 🏆 🥇 🥈 🥉 🏵️ 🌹 🥀 🌷 🌸 💮 🪷 🌻 🌼 🌺 🍀 🌱 🌲 🌳 🌴 🌵 🌾 🌿 ☘️ 🍁 🍂 🍃 ♻️ 🌍 🌎 🌏 🌐 ✅ ❌ ⭕ 🚫 ⛔ 📛 ⚠️ 🚸 🔞 ☢️ ☣️ ⬆️ ↗️ ➡️ ↘️ ⬇️ ↙️ ⬅️ ↖️ ↕️ ↔️ ↩️ ↪️ ⤴️ ⤵️ 🔃 🔄 🔙 🔚 🔛 🔜 🔝 🛐 ⚛️ 🕉️ ✡️ ☸️ ☯️ ✝️ ☦️ ☪️ ☮️ 🕎 🔯 ♈ ♉ ♊ ♋ ♌ ♍ ♎ ♏ ♐ ♑ ♒ ♓ ⛎ 🔀 🔁 🔂 ▶️ ⏩ ⏭️ ⏯️ ◀️ ⏪ ⏮️ 🔼 ⏫ 🔽 ⏬ ⏸️ ⏹️ ⏺️ ⏏️".split(" ") },
+  ];
+
+  let currentEmojiCat = 0;
+
+  function buildEmojiTabs() {
+    el.emojiTabs = document.getElementById("emojiTabs");
+    el.emojiBody = document.getElementById("emojiBody");
+    el.emojiSearch = document.getElementById("emojiSearch");
+
+    el.emojiTabs.innerHTML = EMOJI_CATEGORIES.map(
+      (c, i) =>
+        `<button class="emoji-tab ${i === 0 ? "active" : ""}" data-idx="${i}" title="${c.name}">${c.icon}</button>`
+    ).join("");
+    el.emojiTabs.querySelectorAll(".emoji-tab").forEach((t) => {
+      t.addEventListener("click", () => {
+        currentEmojiCat = Number(t.dataset.idx);
+        el.emojiTabs.querySelectorAll(".emoji-tab").forEach((x) =>
+          x.classList.toggle("active", x === t)
+        );
+        el.emojiSearch.value = "";
+        renderEmojiBody("");
+      });
+    });
+    el.emojiSearch.addEventListener("input", () => {
+      renderEmojiBody(el.emojiSearch.value.trim());
+    });
+    renderEmojiBody("");
+  }
+
+  function renderEmojiBody(query) {
+    if (query) {
+      const q = query.toLowerCase();
+      const matches = [];
+      EMOJI_CATEGORIES.forEach((c) => {
+        if (c.name.toLowerCase().includes(q)) matches.push(...c.items);
+      });
+      if (!matches.length) {
+        el.emojiBody.innerHTML = `<div class="emoji-empty">No emoji found</div>`;
+        return;
+      }
+      el.emojiBody.innerHTML = `<div class="emoji-grid">${matches.map((e) => `<span>${e}</span>`).join("")}</div>`;
+    } else {
+      const cat = EMOJI_CATEGORIES[currentEmojiCat];
+      el.emojiBody.innerHTML = `
+        <div class="emoji-category-label">${esc(cat.name)}</div>
+        <div class="emoji-grid">${cat.items.map((e) => `<span>${e}</span>`).join("")}</div>
+      `;
+    }
+    el.emojiBody.querySelectorAll(".emoji-grid span").forEach((s) => {
+      s.addEventListener("click", () => {
+        insertAtCaret(el.msgInput, s.textContent);
+        el.msgInput.focus();
+      });
+    });
+  }
+
+  function insertAtCaret(textarea, text) {
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? textarea.value.length;
+    textarea.value =
+      textarea.value.slice(0, start) + text + textarea.value.slice(end);
+    const pos = start + text.length;
+    textarea.setSelectionRange(pos, pos);
+    textarea.dispatchEvent(new Event("input"));
+  }
+
+  el.emojiBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
     const rect = el.emojiBtn.getBoundingClientRect();
     el.emojiPicker.style.bottom = window.innerHeight - rect.top + 8 + "px";
     el.emojiPicker.style.right = window.innerWidth - rect.right + "px";
     el.emojiPicker.classList.toggle("hidden");
+    if (!el.emojiPicker.classList.contains("hidden")) {
+      document.getElementById("emojiSearch").focus();
+    }
   });
-  el.emojiPicker.querySelectorAll("span").forEach((s) => {
-    s.addEventListener("click", () => {
-      el.msgInput.value += s.textContent;
-      el.msgInput.focus();
-      el.emojiPicker.classList.add("hidden");
-    });
-  });
+  buildEmojiTabs();
 
   // ---- Load older ----
   el.loadMoreBtn.addEventListener("click", async () => {
@@ -579,6 +692,7 @@
     if (conv) {
       conv.lastMessage = {
         id: msg._id, text: msg.text, fileUrl: msg.fileUrl, fileType: msg.fileType,
+        system: msg.system, callInfo: msg.callInfo,
         sender: { id: msg.sender._id || msg.sender.id, displayName: msg.sender.displayName },
         createdAt: msg.createdAt,
       };
